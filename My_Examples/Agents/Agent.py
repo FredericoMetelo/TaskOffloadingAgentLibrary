@@ -56,7 +56,7 @@ def Network(input_shape, output_shape, learning_rate, no_layers=3, layer_size_ve
         i += 1
     # I use a linear layer because i consider the actions to be taken as a pair
     # of type (target node, number of actions to take.
-    output = Dense(output_shape[0], activation="relu")(layer)  # ReLu instead of Linear.
+    output = Dense(output_shape[0], activation="linear")(layer)  # ReLu instead of Linear.
     # Optimal way to handle this? No. Do I care? yes. Hotel? trivago.
     model = Model(inputs=input, outputs=output, name="Net")
     model.compile(optimizer=Adam(learning_rate=learning_rate),
@@ -92,13 +92,15 @@ class Agent:
     def epsilon_greedy_policy(self, observation):
         if np.random.random() < self.epsilon:
             action = fl.flatten_action(self.action_space.sample())
+            action_type = "Explore"
 
         else:
             state = np.array([observation])
             actions = self.policy_qnet.predict(
                 state)  # I assume that the memory stores the flattened versions of the arrays
             action = actions[0]  # tf.math.argmax(actions, axis=1).numpy()[0]
-        return action  # In my specific case this would not be needed. But I will clean stuff up latter, for now i want to see it running properly
+            action_type = "Exploit"
+        return action, action_type  # In my specific case this would not be needed. But I will clean stuff up latter, for now i want to see it running properly
 
     def store_experience(self, state, action, reward, new_state, done):
         self.experience.store_tuples(state, action, reward, new_state, done)
@@ -151,9 +153,10 @@ class Agent:
             score = 0.0
             state, _ = env.reset()
             state = fl.flatten_observation(state)
-            debug_i = 0
+            step = 0
             while not done:
-                action = self.epsilon_greedy_policy(state)
+                action, type = self.epsilon_greedy_policy(state)
+                print("\nStep: " + str(step) + " => " + type + ":")
                 temp = env.step(fl.deflatten_action(np.floor(action)))
                 new_state, reward, done, _, _ = temp
                 score += reward
@@ -161,7 +164,7 @@ class Agent:
                 self.store_experience(state, action, reward, new_state, done)
                 state = new_state
                 self.train()
-                debug_i += 1
+                step += 1
             scores.append(score)
             obj.append(goal)
             episodes.append(i)

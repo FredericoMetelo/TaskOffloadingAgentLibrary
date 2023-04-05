@@ -10,12 +10,11 @@ from My_Examples.Utils import flattenutils as fl
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-
     env = gym.make("peersim_gym/PeersimEnv-v0")
-    env.env.init(configs={"SIZE": "2", "CYCLES": "100"})   # TODO Untested
+    env.env.init(configs={"SIZE": "6", "CYCLES": "1000"}, log_dir='/home/fm/PycharmProjects/RLTesting/logs/')
     # Option 2:
-    # env = PeersimEnv(configs=None)  # Note: This is to avoid training stopping at  200 iterations, default of gym.
-    obs, done = env.reset()
+    # env = PeersimEnv(configs=None, log_dir='/home/fm/PycharmProjects/RLTesting/logs/')  # Note: This is to avoid training stopping at  200 iterations, default of gym.
+    obs = env.observation_space.sample()
     flat_obs = fl.flatten_observation(obs)
     shape_obs_flat = np.shape(flat_obs)
 
@@ -32,7 +31,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 0
     test = 1
-    num_episodes = 1
+    num_episodes = 300
 
     # For plotting metrics
     all_epochs = []
@@ -40,23 +39,16 @@ if __name__ == '__main__':
     dqn_agent = Agent(input_shape=shape_obs_flat,  # Confirm this is legal!
                       output_shape=shape_a_flat,
                       action_space=env.action_space,
-                      batch_size=20,
-                      epsilon_start=1.0,
-                      epsilon_decay=0.995,
+                      batch_size=100,
+                      epsilon_start=0.70,
+                      epsilon_decay=0.0005,
                       epsilon_end=0.01,
-                      gamma=0.95,
+                      gamma=0.55,
                       update_interval=150,
-                      learning_rate=0.001)
-    for i in range(0, num_episodes):
-        state, _ = env.reset()
+                      learning_rate=0.00001)
 
-        epochs, penalties, reward, = 0, 0, 0
-        done = False
-
-        dqn_agent.train_model(env, num_episodes)
+    dqn_agent.train_model(env, num_episodes)
 
     print("Training finished.\n")
 
-    print("Timesteps taken: {}".format(epochs))
-    print("Penalties incurred: {}".format(penalties))
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
