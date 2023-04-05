@@ -11,7 +11,7 @@ from My_Examples.Utils import flattenutils as fl
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     env = gym.make("peersim_gym/PeersimEnv-v0")
-    env.env.init(configs={"SIZE": "6", "CYCLES": "1000"}, log_dir='/home/fm/PycharmProjects/RLTesting/logs/')
+    env.env.init(configs={"SIZE": "6", "CYCLES": "1000"}, log_dir='/home/fredericometelo/PycharmProjects/RLTesting-FredericosThesis/logs/')
     # Option 2:
     # env = PeersimEnv(configs=None, log_dir='/home/fm/PycharmProjects/RLTesting/logs/')  # Note: This is to avoid training stopping at  200 iterations, default of gym.
     obs = env.observation_space.sample()
