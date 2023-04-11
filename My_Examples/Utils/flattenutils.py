@@ -32,6 +32,9 @@ def flatten_action(action):
 
     return np.concatenate((flat_target_node, flat_offload_amount), axis=0)
 
+def get_queue(observation):
+    # Might need some restructuring if I ever change the shape of the environment. Particulary idf I start using the projection
+    return observation[1:-1]
 
 def deflatten_action(flat_a):
     action = {
