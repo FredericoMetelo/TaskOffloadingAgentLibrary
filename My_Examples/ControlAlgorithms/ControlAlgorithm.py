@@ -57,7 +57,7 @@ class ControlAlgorithm:
         ax[2].plot(x, per_episode)
 
         if print_instead:
-            plt.savefig(f"../Plots/plt_{self.control_type}")
+            plt.savefig(f"/Plots/plt_{self.control_type}")
         else:
             plt.show()
         return
@@ -66,7 +66,6 @@ class ControlAlgorithm:
         """ The name of this method is train_model exclusively for compatibility reasons, when running shallow models
         this will effectively not train anything"""
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
-        goal = 200
         for i in range(num_episodes):
             done = False
             score = 0.0
@@ -82,7 +81,6 @@ class ControlAlgorithm:
                 step += 1
             avg_episode.append(score / step)
             scores.append(score)
-            obj.append(goal)
             episodes.append(i)
             avg_score = np.mean(scores[-100:])
             avg_scores.append(avg_score)

@@ -24,12 +24,15 @@ class LeastQueueAlgorithm(ControlAlgorithm):
         # Q varies between 0 and num_nodes - 1, so we need to offset the difference.
         Q = observation.get('Q')
         action = np.argmin(Q)  # Will now proceed to change the state to not include the Control node.
-        if Q[id] >= Q[action]:
+        if Q[id] <= Q[action]:
             # If there is no node with less tasks then offloads 0.
-            action = np.array([action, 0])
+            # Once again the node ID is the (position in the Q) - 1. Therefor, to convert the result f the argmax that
+            # returns the position in the Q, I have to increase the action by one.
+            action = np.array([action + 1, 0])
         else:
             source = Q[id]
             target = Q[action]
-            offload_amount = target - math.ceil((target + source)/2)
-            action = np.array([target, offload_amount])
+            offload_amount = source - math.ceil((target + source)/2)
+            # Same deal as the if branch.
+            action = np.array([action + 1, offload_amount])
         return action, action_type

@@ -9,6 +9,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Dense
+import matplotlib.pyplot as plt
 
 import peersim_gym
 
@@ -65,7 +66,7 @@ def Network(input_shape, output_shape, learning_rate, no_layers=3, layer_size_ve
     return model
 
 
-class Agent:
+class DQN:
 
     def __init__(self, input_shape, action_space, output_shape, batch_size=500, epsilon_start=0.7, epsilon_decay=0.01,
                  gamma=0.7,
@@ -89,6 +90,25 @@ class Agent:
         self.target_qnet = Network(input_shape=input_shape, output_shape=output_shape, layer_size_vector=[24, 24],
                                    learning_rate=self.learning_rate)
 
+    def __plot(self, x, scores, avg_scores, per_episode, print_instead=False):
+        # Setup for print
+        fig, ax = plt.subplots(ncols=3, nrows=1, sharex=True)  # Create 1x3 plot
+
+        # Print the metrics:
+        ax[0].set_title("Scores")
+        ax[0].plot(x, scores)
+
+        ax[1].set_title("Average Scores")
+        ax[1].plot(x, avg_scores)
+
+        ax[2].set_title("Average Score in Episode")
+        ax[2].plot(x, per_episode)
+
+        if print_instead:
+            plt.savefig(f"/Plots/plt_{self.control_type}")
+        else:
+            plt.show()
+        return
     def epsilon_greedy_policy(self, observation):
         if np.random.random() < self.epsilon:
             action = fl.flatten_action(self.action_space.sample())
@@ -144,9 +164,8 @@ class Agent:
         self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_end else self.epsilon_end
         self.step += 1
 
-    def train_model(self, env, num_episodes):
-        scores, episodes, avg_scores, obj = [], [], [], []
-        goal = 200
+    def train_model(self, env, num_episodes, print_instead=True):
+        scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         f = 0
         for i in range(num_episodes):
             done = False
@@ -165,8 +184,8 @@ class Agent:
                 state = new_state
                 self.train()
                 step += 1
+            avg_episode.append(score / step)
             scores.append(score)
-            obj.append(goal)
             episodes.append(i)
             avg_score = np.mean(scores[-100:])
             avg_scores.append(avg_score)
@@ -176,4 +195,5 @@ class Agent:
                 self.q_net.save(("saved_networks/dqn_model{0}".format(f)))
                 self.q_net.save_weights(("saved_networks/dqn_model{0}/net_weights{0}.h5".format(f)))
                 f += 1
+        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
         env.close()
