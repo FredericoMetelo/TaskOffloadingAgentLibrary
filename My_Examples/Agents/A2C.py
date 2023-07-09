@@ -246,18 +246,19 @@ class A2C:
             f_2 = exp(-1 * square(action - mean) / (2 * var))
 
             pdf = f_1 * f_2  # Good old gaussian PDF.
+            prob = tf.math.reduce_prod(pdf, axis=1)
              # The problem is that the network predicts the parameters, and the action is taken from said parameters.
              # I only pass the action to this method. I have to pass both the action and the parameters I used for the prediction.
-            log_pdf = log(pdf + epsilon())
+            log_pdf = log(prob + epsilon())
 
 
             entropy = 0.5 * (log(k_1 * var) + k_0)
 
-            probs.append(pdf[0])
+            probs.append(prob[0])
             log_probs.append(log_pdf[0])
             entropies.append(entropy[0])
 
-        return np.asarray(probs), np.asarray(log_probs), np.asarray(entropies)
+        return tf.convert_to_tensor(probs), tf.convert_to_tensor(log_probs), tf.convert_to_tensor(entropies)
 
     def _compute_advantages_targets(self, discounted_rewards, values, next_values):
         advantages = []
@@ -276,4 +277,4 @@ class A2C:
 
                 advantages.append(advantage)
                 targets.append(target)
-        return advantages, targets
+        return tf.convert_to_tensor(advantages), tf.convert_to_tensor(targets)
