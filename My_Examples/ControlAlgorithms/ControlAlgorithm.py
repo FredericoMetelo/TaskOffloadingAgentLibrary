@@ -61,7 +61,22 @@ class ControlAlgorithm:
         else:
             plt.show()
         return
+    def __plot2(self, x, per_episode, title=None, print_instead=False, csv_dump=True):
+        plt.plot(x, per_episode)
+        plt.ylabel('Average Score')
+        if not (title is None):
+            plt.title(title)
+        if print_instead:
+            plt.savefig(f"/Plots/plt_{self.control_type}")
+        else:
+            plt.show()
 
+        if csv_dump:
+            with open(f"./Plots/{self.control_type}.csv", 'ab') as f:
+                data = np.column_stack((x, per_episode))
+                np.savetxt(f, data, delimiter=',', header='x,per_episode', comments='')
+
+        return
     def execute_simulation(self, env, num_episodes, print_instead=True):
         """ The name of this method is train_model exclusively for compatibility reasons, when running shallow models
         this will effectively not train anything"""
@@ -71,11 +86,15 @@ class ControlAlgorithm:
             score = 0.0
             state, _ = env.reset()
             step = 0
-            while not done:
+            while not done: # [5 7 1 1 1 1]
                 action, type = self.select_action(state)
                 print("\nStep: " + str(step) + " => " + type + ":")
                 temp = env.step(fl.deflatten_action(np.floor(action)))
                 new_state, reward, done, _, _ = temp
+                if reward < -400:
+                    # Clip reward
+                    reward = -400
+                    print(f"We had an hit: {state}")
                 score += reward
                 state = new_state
                 step += 1
@@ -87,4 +106,5 @@ class ControlAlgorithm:
             print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
                                                                              avg_score))
         self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
+        self.__plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
         env.close()

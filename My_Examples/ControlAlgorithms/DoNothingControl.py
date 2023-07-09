@@ -20,7 +20,7 @@ class DoNothingControl(ControlAlgorithm):
     def select_action(self, observation):
         Q = observation.get('Q')
         action = np.argmin(Q)
-        action = np.array([action + 1, 0])
+        action = np.array([action, 0])
         action_type = self.control_type
         return action, action_type
 

@@ -28,7 +28,7 @@ class LeastQueueAlgorithm(ControlAlgorithm):
             # If there is no node with less tasks then offloads 0.
             # Once again the node ID is the (position in the Q) - 1. Therefor, to convert the result f the argmax that
             # returns the position in the Q, I have to increase the action by one.
-            action = np.array([action + 1, 0])
+            action = np.array([action, 0])
         else:
             source = Q[id]
             target = Q[action]

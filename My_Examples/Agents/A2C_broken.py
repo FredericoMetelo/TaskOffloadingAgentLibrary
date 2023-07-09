@@ -1,8 +1,8 @@
 # Inspired by DanielPalaio's Project in:
 # https://github.com/DanielPalaio/LunarLander-v2_DeepRL/blob/main/DQN/replay_buffer.py
-from tensorflow import multiply, divide
+from tensorflow import multiply
 from tensorflow.keras.optimizers import Adam
-from tensorflow.python.keras.backend import placeholder, mean, square, function, sqrt, exp, epsilon, log, constant
+from tensorflow.python.keras.backend import placeholder, mean, square, function, sqrt, exp, epsilon, log
 from tensorflow.python.keras.layers import Lambda
 
 from My_Examples.Agents.ReplayMemory import ReplayMemory
@@ -69,18 +69,16 @@ class A2C:
         # Read this paper as well: https://arxiv.org/pdf/1509.02971.pdf
 
         input = Input(shape=input_shape, name="input_actor")
-        common = Dense(layer_size, activation="relu", name='hidden_actor', trainable=True)(input)
-        actor_mean = Dense(output_shape[0], activation='softplus', kernel_initializer="he_uniform", name='actor_mean', trainable=True)(
-            common)
-        # Note: Softplus outputs between [0, inf], this part deviates form the guide. May be a breaking point
-        actor_std_0 = Dense(output_shape[0], activation="softplus", kernel_initializer="he_uniform", name='std_0', trainable=True)(
-            common)
+        common = Dense(layer_size, activation="relu", name='hidden_actor')(input)
+        actor_mean = Dense(output_shape[0], activation='softplus', kernel_initializer="he_uniform", name='actor_mean')(common)
+            # Note: Softplus outputs between [0, inf], this part deviates form the guide. May be a breaking point
+        actor_std_0 = Dense(output_shape[0], activation="softplus", kernel_initializer="he_uniform", name='std_0')(common)
         actor_std = Lambda(lambda x: x + 0.0001, name='std')(actor_std_0)
-        # Ensures std is not 0, we will be dividing stuff by std.
+            # Ensures std is not 0, we will be dividing stuff by std.
 
         input2 = Input(shape=input_shape, name="input_critic")
-        common2 = Dense(layer_size, activation="relu", name='hidden_critic', trainable=True)(input2)
-        critic_state_value = Dense(1, activation='linear', kernel_initializer='he_uniform', name='state-value', trainable=True)(common2)
+        common2 = Dense(layer_size, activation="relu", name='hidden_critic')(input2)
+        critic_state_value = Dense(1, activation='linear', kernel_initializer='he_uniform', name='state-value')(common2)
         # Will approximate the value function A(s) = r + yV(s') - V(s)
 
         actor = Model(inputs=input, outputs=(actor_std, actor_mean))
@@ -92,103 +90,157 @@ class A2C:
         actor.make_predict_function()
         critic.make_predict_function()
 
-
         actor.summary()
         critic.summary()
         return actor, critic
+
+
+    def compute_actor_loss(self, actions, td, advantages):
+        probs = []
+        log_probs = []
+        entropies = []
+        losses = []
+        for action, advantage in (actions, advantages):
+            mean, std = (action[0], action[1])
+            var = square(std)
+            pdf = 1 / (sqrt(2 * np.pi) * std) * exp(-square(action - mean) / (2 * var))  # Goog old gaussian PDF.
+            log_pdf = log(pdf + epsilon())
+            probs.append(pdf)
+            log_probs.append(log_pdf)
+
+            entropy = tf.python.keras.backend.sum(0.5 * (log(2. * np.pi * var) + 1.))
+            entropies.append(entropy)
+
+            loss = multiply(log_pdf, advantage)
+
+
+        exp_v = log_pdf * advantages
+        # entropy is made small before added to exp_v
+        exp_v = tf.python.keras.backend.sum(exp_v + 0.01 * entropy)
+        # loss is a negation
+        actor_loss = -exp_v
+
+        # use custom loss to perform updates with Adam, ie. get gradients
+        # optimizer = Adam(lr=self.learning_rate)
+        # updates = optimizer.get_updates(params=self.actor.trainable_weights, loss=actor_loss)
+        # adjust params with custom train function
+        # train = function([self.actor.input, action, advantages], [], updates=updates)
+        # return custom train function
+        return actor_loss
+
+    def compute_critic_loss(self):
+        # Will accomodate the parameters
+        discounted_reward = placeholder(shape=(None, 1))
+        value = self.critic.output
+        # Loss: E_t[(G_t - V(s_t))^2] # Standard MSE loss used to train the value network.
+        loss = mean(square(discounted_reward - value))
+        # optimizer = Adam(
+        #     lr=self.learning_rate)  # Note: Separate into two learning rates. One for Critic another for Actor
+        # updates = optimizer.get_updates(params=self.critic.trainable_weights, loss=loss)
+        # train = function([self.critic.input, discounted_reward], [], updates=updates)
+        return loss
 
     def get_action(self, observation):
         mean, std = self.actor.predict(observation)
         var = square(std)
         epsilon = np.random.randn(fl.flatten_action(self.action_space).size)
-        # randn stands for randomly sample  a normal(mean = 1, std = 0).
+            # randn stands for randomly sample  a normal(mean = 1, std = 0).
         action = mean + std * epsilon
-        # do those Normal distribution shenanigans to change the distribution
+            # do those Normal distribution shenanigans to change the distribution
         action_target = np.asarray([np.clip(action[0][0], 0, 5)])  # TODO!! Critical!!!! Magic numbers for now
         action_amount = np.asarray([np.clip(action[0][1], 0, 10)])
         return np.concatenate((np.rint(action_target), np.rint(action_amount)), axis=0)
 
-    def __train(self, s, a, r, s_next, k):
-        # Preprocessing
-        states = np.array(s)
-        actions = np.array(a)
-        discounted_rewards = self._discount_rewards(rewards=r)
-        next_states = np.array(s_next)
+    def __train(self, s, a, r, s_next):
+        # Based on the learn function as described in:
+        # https://towardsdatascience.com/actor-critic-with-tensorflow-2-x-part-1-of-2-d1e26a54ce97
+
+        target = np.zeros((1, 1))
+        advantages = np.zeros((1, self.action_shape[0]))
+        state_np = np.asarray([s])
+        next_state_np = np.asarray([s_next])
 
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
-            values = self.critic(states)
-            next_values = self.critic(next_states)
-            normal_parameters = self.actor(states, training=True)
-            advantages, targets = self._compute_advantages_targets(discounted_rewards, values, next_values)
-            probs, log_probs, entropies = self._action_probabilities(actions, normal_parameters)
+            value = self.critic.predict(state_np)# [0]
+            next_value = self.critic.predict(next_state_np) # [0]
 
-            # Compute the objectives
-            # See: https://github.com/RichardMinsooGo-RL-Gym/Bible_4_PI_TF2_A_ActorCritic_Policy_Iterations/blob/main/TF2_A_PI_44_A3C.py
-            policy_loss = tf.reduce_mean(log_probs * advantages, 0)
-            entropy_loss = tf.reduce_mean(entropies, 0)
-            actor_loss = -(policy_loss + entropy_loss * 0.005)
-            critic_loss = mean(square(discounted_rewards - values))
+            # if done:
+            #     advantages[0] = r - value
+            #     target[0][0] = r
+            # else:
+            #     advantages[0] = r + self.gamma * next_value - value  # Literally the advantages of the actions taken.
+            #     target[0][0] = r + self.gamma * next_value  # Literally the state-value target from bellman equations.
 
-        grads1 = tape1.gradient(actor_loss, self.actor.trainable_weights)  # break them apart first??
-        grads2 = tape2.gradient(critic_loss, self.critic.trainable_weights)
+            a_loss = self.compute_actor_loss([s, a, advantages])
+            c_loss = self.compute_critic_loss([s, target])
+        grads1 = tape1.gradient(a_loss, self.actor.trainable_weights)
+        grad2 = tape2.gradient(c_loss, self.critic.trainable_weights)
         self.actor_optimizer.apply_gradients(zip(grads1, self.actor.trainable_weights))
-        self.critic_optimizer.apply_gradients(zip(grads2, self.critic.trainable_weights))
-        return
+        self.critic_optimizer.apply_gradients(zip(grad2, self.critic.trainable_weights))
+        return a_loss, c_loss
 
     def train_model(self, env, num_episodes, print_instead=True):
-        # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
-        steps_per_return = 5
+        f = 0
         for i in range(num_episodes):
-            # Prepare variables for the next run
-            states = []
-            actions = []
-            rewards = []
-            next_states = []
             done = False
-            total_reward = 0
-            step = 0
+            rewards = []
+            states = []
+            next_states = []
+            actions = []
+            all_actor_loss = []
+            all_critic_loss = []
 
-            # Episode metrics
             score = 0.0
-
-            # Reset the state
             state, _ = env.reset()
             state = fl.flatten_observation(state)
+            step = 0
 
             while not done:
-                print(f'Step: {step}\n')
-                # Interaction Step:
-                a = self.get_action(np.array([state]))
-                action = np.floor(a)
-                next_state, reward, done, _, _ = env.step(fl.deflatten_action(action))
-                next_state = fl.flatten_observation(next_state)
+                action = self.get_action(np.asarray([state]))
+                new_state, reward, done, _, _ = env.step(fl.deflatten_action(np.floor(action)))
+                new_state = fl.flatten_observation(new_state)
 
-                # Update history
                 states.append(state)
                 actions.append(action)
                 rewards.append(reward)
-                next_states.append(next_state)
+                next_states.append(new_state)
 
-                # Advance to next iter
-                state = next_state
+                state = new_state
                 score += reward
                 step += 1
-                # Update metrics
-                if step >= steps_per_return or done:
-                    # In a n step return advantage actor critic scenario, we have
-                    self.__train(states, actions, rewards, next_states, step)
-                    step = 0
-        # Update final metrics
+                if done:
+                    states, actions, discounted_rewards, next_states = self._preprocess(states, actions, rewards, next_states)
+                    self.__train(states, actions, discounted_rewards, next_states)
+
             avg_episode.append(score / step)
             scores.append(score)
             episodes.append(i)
             avg_score = np.mean(scores[-100:])
             avg_scores.append(avg_score)
+            print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon, avg_score))
+            if avg_score >= 200.0 and score >= 250:
+                self.actor.save(("saved_networks/actor_model{0}".format(f)))
+                self.actor.save_weights(("saved_networks/actor_model{0}/net_weights{0}.h5".format(f)))
+                self.critic.save(("saved_networks/critic_model{0}".format(f)))
+                self.critic.save_weights(("saved_networks/critic_model{0}/net_weights{0}.h5".format(f)))
+                f += 1
 
-        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
-                    print_instead=print_instead)
+        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
         env.close()
+
+    def _preprocess(self, states, actions, rewards, next_states):
+        discounted_rewards = []
+        sum_reward = 0
+        rewards.reverse()
+        for r in rewards:
+            sum_reward = r + self.gamma*sum_reward
+            discounted_rewards.append(sum_reward)
+        states = np.array(states)
+        actions = np.array(actions)
+        discounted_rewards = np.array(discounted_rewards)
+        next_states = np.array(next_states)
+        return states, actions, discounted_rewards, next_states
 
     def __plot(self, x, scores, avg_scores, per_episode, print_instead=False):
         # Setup for print
@@ -209,71 +261,3 @@ class A2C:
         else:
             plt.show()
         return
-
-    def _discount_rewards(self, rewards):
-        """
-        This method will compute an array with the discounted reward for each step.
-        If the agent got rewards=[4 4 2] in the last three steps, and gamma=0.5 then the return of this array is
-        [2 4 6]
-        :param rewards:
-        :return:
-        """
-        discounted_rewards = []
-        sum_reward = 0
-        rewards.reverse()
-        for r in rewards:
-            sum_reward = r + self.gamma * sum_reward
-            discounted_rewards.append(sum_reward)
-        discounted_rewards = np.array(discounted_rewards)
-        return discounted_rewards
-
-    def _action_probabilities(self, actions, normal_parameters):
-        probs = []
-        log_probs = []
-        entropies = []
-        k_0 = np.ones((1, actions.shape[1]))
-        k_1 = np.ones((1, actions.shape[1])) * 2 * np.pi
-
-        means, stds = normal_parameters
-
-        for (action, mean, std) in zip(actions, means, stds):  # TODO Finish adding the parameters.
-            # mean, std = (parameters[0], parameters[1])
-            var = square(std)
-
-
-            f_0 = (k_1 * std)
-            f_1 = divide(constant(1), f_0)
-            f_2 = exp(-1 * square(action - mean) / (2 * var))
-
-            pdf = f_1 * f_2  # Good old gaussian PDF.
-             # The problem is that the network predicts the parameters, and the action is taken from said parameters.
-             # I only pass the action to this method. I have to pass both the action and the parameters I used for the prediction.
-            log_pdf = log(pdf + epsilon())
-
-
-            entropy = 0.5 * (log(k_1 * var) + k_0)
-
-            probs.append(pdf[0])
-            log_probs.append(log_pdf[0])
-            entropies.append(entropy[0])
-
-        return np.asarray(probs), np.asarray(log_probs), np.asarray(entropies)
-
-    def _compute_advantages_targets(self, discounted_rewards, values, next_values):
-        advantages = []
-        targets = []
-        k = 0
-        for (y_reward, value, next_value) in zip(discounted_rewards, values, next_values):
-            if k == 0:
-                advantage = y_reward - value
-                target = y_reward
-
-                advantages.append(advantage)
-                targets.append(target)
-            else:
-                advantage = y_reward + tf.math.pow(self.gamma, k) * next_value - value
-                target = y_reward - self.gamma * next_value
-
-                advantages.append(advantage)
-                targets.append(target)
-        return advantages, targets
