@@ -69,18 +69,18 @@ class A2C:
         # Read this paper as well: https://arxiv.org/pdf/1509.02971.pdf
 
         input = Input(shape=input_shape, name="input_actor")
-        common = Dense(layer_size, activation="relu", name='hidden_actor', trainable=True)(input)
-        actor_mean = Dense(output_shape[0], activation='softplus', kernel_initializer="he_uniform", name='actor_mean', trainable=True)(
+        common = Dense(layer_size, activation="relu", name='hidden_actor', trainable=True, dtype=tf.float64)(input)
+        actor_mean = Dense(output_shape[0], activation='softplus', kernel_initializer="he_uniform", name='actor_mean', trainable=True, dtype=tf.float64)(
             common)
         # Note: Softplus outputs between [0, inf], this part deviates form the guide. May be a breaking point
-        actor_std_0 = Dense(output_shape[0], activation="softplus", kernel_initializer="he_uniform", name='std_0', trainable=True)(
+        actor_std_0 = Dense(output_shape[0], activation="softplus", kernel_initializer="he_uniform", name='std_0', trainable=True, dtype=tf.float64)(
             common)
-        actor_std = Lambda(lambda x: x + 0.0001, name='std')(actor_std_0)
+        actor_std = Lambda(lambda x: x + 0.0001, name='std', dtype=tf.float64)(actor_std_0)
         # Ensures std is not 0, we will be dividing stuff by std.
 
         input2 = Input(shape=input_shape, name="input_critic")
         common2 = Dense(layer_size, activation="relu", name='hidden_critic', trainable=True)(input2)
-        critic_state_value = Dense(1, activation='linear', kernel_initializer='he_uniform', name='state-value', trainable=True)(common2)
+        critic_state_value = Dense(1, activation='linear', kernel_initializer='he_uniform', name='state-value', trainable=True, dtype=tf.float64)(common2)
         # Will approximate the value function A(s) = r + yV(s') - V(s)
 
         actor = Model(inputs=input, outputs=(actor_std, actor_mean))
@@ -108,20 +108,23 @@ class A2C:
         action_amount = np.asarray([np.clip(action[0][1], 0, 10)])
         return np.concatenate((np.rint(action_target), np.rint(action_amount)), axis=0)
 
-    def __train(self, s, a, r, s_next, k):
+    def __train(self, s, a, r, s_next, k, fin):
         # Preprocessing
         states = np.array(s)
         actions = np.array(a)
-        discounted_rewards = self._discount_rewards(rewards=r)
+        discounted_rewards = tf.convert_to_tensor(self._discount_rewards(rewards=r))
         next_states = np.array(s_next)
+        dones = tf.convert_to_tensor(np.logical_not(np.array(fin)).astype(float), dtype=tf.float64)
+        pows = np.arange(0, states.shape[0])
+        gammas = tf.convert_to_tensor(np.ones(discounted_rewards.shape) * self.gamma)
 
+        pows = tf.pow(gammas, pows)
         with tf.GradientTape() as tape1, tf.GradientTape() as tape2:
             values = self.critic(states)
             next_values = self.critic(next_states)
             normal_parameters = self.actor(states, training=True)
-            advantages, targets = self._compute_advantages_targets(discounted_rewards, values, next_values)
+            advantages, targets = self._compute_advantages_targets(discounted_rewards, pows=pows, values=values, next_values=next_values, gammas=gammas, dones=dones)
             probs, log_probs, entropies = self._action_probabilities(actions, normal_parameters)
-
             # Compute the objectives
             # See: https://github.com/RichardMinsooGo-RL-Gym/Bible_4_PI_TF2_A_ActorCritic_Policy_Iterations/blob/main/TF2_A_PI_44_A3C.py
             policy_loss = tf.reduce_mean(log_probs * advantages, 0)
@@ -145,6 +148,7 @@ class A2C:
             actions = []
             rewards = []
             next_states = []
+            dones = []
             done = False
             total_reward = 0
             step = 0
@@ -169,7 +173,7 @@ class A2C:
                 actions.append(action)
                 rewards.append(reward)
                 next_states.append(next_state)
-
+                dones.append(done)
                 # Advance to next iter
                 state = next_state
                 score += reward
@@ -177,7 +181,7 @@ class A2C:
                 # Update metrics
                 if step >= steps_per_return or done:
                     # In a n step return advantage actor critic scenario, we have
-                    self.__train(states, actions, rewards, next_states, step)
+                    self.__train(states, actions, rewards, next_states, k=step, fin=dones)
                     step = 0
         # Update final metrics
             avg_episode.append(score / step)
@@ -228,53 +232,62 @@ class A2C:
         return discounted_rewards
 
     def _action_probabilities(self, actions, normal_parameters):
-        probs = []
-        log_probs = []
-        entropies = []
-        k_0 = np.ones((1, actions.shape[1]))
-        k_1 = np.ones((1, actions.shape[1])) * 2 * np.pi
+
+
+        k_0 = tf.convert_to_tensor(np.ones( actions.shape), dtype=tf.float64)
+        k_1 = tf.convert_to_tensor(np.ones(actions.shape) * 2 * np.pi, dtype=tf.float64)
 
         means, stds = normal_parameters
+        vars = tf.square(stds)
 
-        for (action, mean, std) in zip(actions, means, stds):  # TODO Finish adding the parameters.
-            # mean, std = (parameters[0], parameters[1])
-            var = square(std)
+        f_0 = (k_1 * stds)
+        f_1 = divide(constant(1, dtype=tf.float64), f_0)
+        f_2 = exp(-1 * square(actions - means) / (2 * vars))
+        probs = f_1 * f_2  # Good old gaussian PDF.
 
-
-            f_0 = (k_1 * std)
-            f_1 = divide(constant(1), f_0)
-            f_2 = exp(-1 * square(action - mean) / (2 * var))
-
-            pdf = f_1 * f_2  # Good old gaussian PDF.
-            prob = tf.math.reduce_prod(pdf, axis=1)
-             # The problem is that the network predicts the parameters, and the action is taken from said parameters.
-             # I only pass the action to this method. I have to pass both the action and the parameters I used for the prediction.
-            log_pdf = log(prob + epsilon())
+        log_probs = log(probs + epsilon())
+        entropies = 0.5 * (log(k_1 * vars) + k_0)
 
 
-            entropy = 0.5 * (log(k_1 * var) + k_0)
+        # for (action, mean, std) in zip(actions, means, stds):  # TODO Finish adding the parameters.
+        #     # mean, std = (parameters[0], parameters[1])
+        #     var = square(std)
+        #
+        #
+        #     f_0 = (k_1 * std)
+        #     f_1 = divide(constant(1), f_0)
+        #     f_2 = exp(-1 * square(action - mean) / (2 * var))
+        #
+        #     pdf = f_1 * f_2  # Good old gaussian PDF.
+        #      # The problem is that the network predicts the parameters, and the action is taken from said parameters.
+        #      # I only pass the action to this method. I have to pass both the action and the parameters I used for the prediction.
+        #     log_pdf = log(pdf + epsilon())
+        #
+        #
+        #     entropy = 0.5 * (log(k_1 * var) + k_0)
+        #
+        #     probs.append(pdf[0])
+        #     log_probs.append(log_pdf[0])
+        #     entropies.append(entropy[0])
 
-            probs.append(prob[0])
-            log_probs.append(log_pdf[0])
-            entropies.append(entropy[0])
+        return probs, log_probs, entropies
 
-        return tf.convert_to_tensor(probs), tf.convert_to_tensor(log_probs), tf.convert_to_tensor(entropies)
+    def _compute_advantages_targets(self, discounted_rewards, pows, values, next_values, gammas, dones):
+        advantages = discounted_rewards + dones * (pows * next_values) - values
+        targets = discounted_rewards - dones * (self.gamma * next_values)
+        # k = 0
+        # for (y_reward, value, next_value) in zip(discounted_rewards, values, next_values):
+        #     if k == 0:
+        #         advantage = y_reward - value
+        #         target = y_reward
+        #
+        #         advantages.append(advantage)
+        #         targets.append(target)
+        #     else:
+        #         advantage = y_reward + tf.math.pow(self.gamma, k) * next_value - value
+        #         target = y_reward - self.gamma * next_value
+        #
+        #         advantages.append(advantage)
+        #         targets.append(target)
+        return advantages, targets
 
-    def _compute_advantages_targets(self, discounted_rewards, values, next_values):
-        advantages = []
-        targets = []
-        k = 0
-        for (y_reward, value, next_value) in zip(discounted_rewards, values, next_values):
-            if k == 0:
-                advantage = y_reward - value
-                target = y_reward
-
-                advantages.append(advantage)
-                targets.append(target)
-            else:
-                advantage = y_reward + tf.math.pow(self.gamma, k) * next_value - value
-                target = y_reward - self.gamma * next_value
-
-                advantages.append(advantage)
-                targets.append(target)
-        return tf.convert_to_tensor(advantages), tf.convert_to_tensor(targets)
