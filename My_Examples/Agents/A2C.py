@@ -115,9 +115,6 @@ class A2C:
         actions = np.reshape(actions, (actions.shape[0], 2))  # This line might be redundant
         discounted_rewards = self._discount_rewards(rewards=r)
         discounted_rewards = tf.convert_to_tensor(np.reshape(discounted_rewards, (discounted_rewards.shape[0], 1)))
-        # TODO | The problem is that the shapes of the arrays are not (5,1) as is predicted by the networks ut just (5,)
-        # TODO | the way to solve this is to have this vectors also be (5,1) it might become needed to edit the way
-        # TODO | they are stored.
         next_states = np.array(s_next)
         dones = tf.convert_to_tensor(np.reshape(np.logical_not(np.array(fin)).astype(float), (states.shape[0], 1)), dtype=tf.float64)
         pows = np.reshape(np.arange(0, states.shape[0]), (states.shape[0], 1))
