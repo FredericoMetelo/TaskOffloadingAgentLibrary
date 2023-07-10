@@ -68,18 +68,18 @@ if __name__ == '__main__':
     # For plotting metrics
     all_epochs = []
     all_penalties = []
-    agent = A2C(input_shape=shape_obs_flat,
-                output_shape=shape_a_flat,
-                action_space=env.action_space,
-                batch_size=100,
-                epsilon_start=0.70,
-                epsilon_decay=0.0005,
-                epsilon_end=0.01,
-                gamma=0.55,
-                update_interval=150,
-                learning_rate=0.00001)
-
-    agent.train_model(env, num_episodes, print_instead=True)
+    # agent = A2C(input_shape=shape_obs_flat,
+    #             output_shape=shape_a_flat,
+    #             action_space=env.action_space,
+    #             batch_size=100,
+    #             epsilon_start=0.70,
+    #             epsilon_decay=0.0005,
+    #             epsilon_end=0.01,
+    #             gamma=0.55,
+    #             update_interval=150,
+    #             learning_rate=0.00001)
+    #
+    # agent.train_model(env, num_episodes, print_instead=True)
 
     # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
     #                               output_shape=shape_a_flat,

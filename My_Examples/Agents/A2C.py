@@ -112,10 +112,15 @@ class A2C:
         # Preprocessing
         states = np.array(s)
         actions = np.array(a)
-        discounted_rewards = tf.convert_to_tensor(self._discount_rewards(rewards=r))
+        actions = np.reshape(actions, (actions.shape[0], 2))  # This line might be redundant
+        discounted_rewards = self._discount_rewards(rewards=r)
+        discounted_rewards = tf.convert_to_tensor(np.reshape(discounted_rewards, (discounted_rewards.shape[0], 1)))
+        # TODO | The problem is that the shapes of the arrays are not (5,1) as is predicted by the networks ut just (5,)
+        # TODO | the way to solve this is to have this vectors also be (5,1) it might become needed to edit the way
+        # TODO | they are stored.
         next_states = np.array(s_next)
-        dones = tf.convert_to_tensor(np.logical_not(np.array(fin)).astype(float), dtype=tf.float64)
-        pows = np.arange(0, states.shape[0])
+        dones = tf.convert_to_tensor(np.reshape(np.logical_not(np.array(fin)).astype(float), (states.shape[0], 1)), dtype=tf.float64)
+        pows = np.reshape(np.arange(0, states.shape[0]), (states.shape[0], 1))
         gammas = tf.convert_to_tensor(np.ones(discounted_rewards.shape) * self.gamma)
 
         pows = tf.pow(gammas, pows)
@@ -152,7 +157,7 @@ class A2C:
             done = False
             total_reward = 0
             step = 0
-
+            total_steps = 0
             # Episode metrics
             score = 0.0
 
@@ -178,13 +183,14 @@ class A2C:
                 state = next_state
                 score += reward
                 step += 1
+                total_steps += 1
                 # Update metrics
                 if step >= steps_per_return or done:
                     # In a n step return advantage actor critic scenario, we have
                     self.__train(states, actions, rewards, next_states, k=step, fin=dones)
                     step = 0
         # Update final metrics
-            avg_episode.append(score / step)
+            avg_episode.append(score / total_steps)
             scores.append(score)
             episodes.append(i)
             avg_score = np.mean(scores[-100:])
