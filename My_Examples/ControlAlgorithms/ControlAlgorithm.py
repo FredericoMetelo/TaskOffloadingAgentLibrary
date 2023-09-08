@@ -57,7 +57,7 @@ class ControlAlgorithm:
         ax[2].plot(x, per_episode)
 
         if print_instead:
-            plt.savefig(f"/Plots/plt_{self.control_type}")
+            plt.savefig(f"./Plots/plt_{self.control_type}")
         else:
             plt.show()
         return

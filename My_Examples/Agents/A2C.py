@@ -46,6 +46,8 @@ class A2C:
         self.actions = output_shape  # There are 2 possible outputs.
         self.step = 0
 
+
+        self.control_type = "A2C"
         self.experience = ReplayMemory(self.batch_size, input_shape=input_shape)
         # Note: Make shure same weight vector for both networks
         self.actor, self.critic = self._Network(input_shape=input_shape, output_shape=output_shape, layer_size=256,
@@ -193,8 +195,8 @@ class A2C:
             avg_score = np.mean(scores[-100:])
             avg_scores.append(avg_score)
 
-        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
-                    print_instead=print_instead)
+        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
+        self.__plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
         env.close()
 
     def __plot(self, x, scores, avg_scores, per_episode, print_instead=False):
@@ -212,11 +214,24 @@ class A2C:
         ax[2].plot(x, per_episode)
 
         if print_instead:
-            plt.savefig(f"/Plots/plt_{self.control_type}")
+            plt.savefig(f"./Plots/plt_{self.control_type}")
         else:
             plt.show()
         return
+    def __plot2(self, x, per_episode, title=None, print_instead=False, csv_dump=True):
+        plt.plot(x, per_episode)
+        plt.ylabel('Average Score')
+        if not (title is None):
+            plt.title(title)
+        if print_instead:
+            plt.savefig(f"./Plots/plt_{self.control_type}")
+        else:
+            plt.show()
 
+        if csv_dump:
+            with open(f"./Plots/{self.control_type}.csv", 'ab') as f:
+                data = np.column_stack((x, per_episode))
+                np.savetxt(f, data, delimiter=',', header='x,per_episode', comments='')
     def _discount_rewards(self, rewards):
         """
         This method will compute an array with the discounted reward for each step.
