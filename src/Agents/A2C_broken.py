@@ -5,8 +5,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.python.keras.backend import placeholder, mean, square, function, sqrt, exp, epsilon, log
 from tensorflow.python.keras.layers import Lambda
 
-from My_Examples.Agents.ReplayMemory import ReplayMemory
-from My_Examples.Utils import flattenutils as fl
+from src.Agents.ReplayMemory import ReplayMemory
+from src.Utils import flattenutils as fl
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model

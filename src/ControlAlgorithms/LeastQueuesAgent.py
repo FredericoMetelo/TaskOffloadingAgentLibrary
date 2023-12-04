@@ -1,8 +1,8 @@
 import math
 
-from My_Examples.ControlAlgorithms.ControlAlgorithm import ControlAlgorithm
+from src.ControlAlgorithms.ControlAlgorithm import ControlAlgorithm
 import numpy as np
-from My_Examples.Utils import flattenutils as fl
+from src.Utils import flattenutils as fl
 import peersim_gym
 
 

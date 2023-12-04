@@ -7,8 +7,8 @@ import matplotlib
 # https://github.com/DanielPalaio/LunarLander-v2_DeepRL/blob/main/DQN/replay_buffer.py
 
 
-from My_Examples.Agents.ReplayMemory import ReplayMemory
-from My_Examples.Utils import flattenutils as fl
+from src.Agents.ReplayMemory import ReplayMemory
+from src.Utils import flattenutils as fl
 import numpy as np
 import matplotlib.pyplot as plt
 from abc import abstractmethod, ABC

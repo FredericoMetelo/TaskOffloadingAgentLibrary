@@ -3,8 +3,8 @@
 
 from tensorflow.keras.optimizers import Adam
 
-from My_Examples.Agents.ReplayMemory import ReplayMemory
-from My_Examples.Utils import flattenutils as fl
+from src.Agents.ReplayMemory import ReplayMemory
+from src.Utils import flattenutils as fl
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model

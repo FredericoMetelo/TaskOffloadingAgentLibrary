@@ -9,11 +9,11 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from Agents.DQNAgent import DQN
-from My_Examples.Agents.A2C import A2C
-from My_Examples.ControlAlgorithms.DoNothingControl import DoNothingControl
-from My_Examples.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
-from My_Examples.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
-from My_Examples.Utils import flattenutils as fl
+from src.Agents.A2C import A2C
+from src.ControlAlgorithms.DoNothingControl import DoNothingControl
+from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
+from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
+from src.Utils import flattenutils as fl
 import configparser
 
 
