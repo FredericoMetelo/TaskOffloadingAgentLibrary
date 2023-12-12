@@ -1,5 +1,6 @@
 import math
-
+import peersim_gym.envs.PeersimEnv as pe
+import gymnasium
 import numpy as np
 
 
@@ -8,14 +9,17 @@ def flatten_observation(observation):
     # The format of the state space is:
     # self.observation_space = Dict(
     # {
-    #     "n_i": Discrete(number_nodes, start=1),
+    #     "nodeId": Discrete(number_nodes, start=1),
     #     "Q": MultiDiscrete(q_list),
-    #     "w": Box(high=max_w, low=0, dtype=np.float)
+    #     "processingPower": Box(high=max_w, low=0, dtype=np.float)
     # }
     #
-    flat_n_i = np.array([observation.get('n_i')])
-    flat_Q = observation.get('Q')
-    flat_w = observation.get('w')
+
+    # x = gymnasium.spaces.utils.flatten_space(observation)
+
+    flat_n_i = np.array([observation.get(pe.STATE_NODE_ID_FIELD)])
+    flat_Q = observation.get(pe.STATE_Q_FIELD)
+    flat_w = observation.get(pe.STATE_PROCESSING_POWER_FIELD)
     x = np.concatenate((flat_n_i, flat_Q, flat_w), axis=0)
     return x
 
@@ -27,10 +31,12 @@ def flatten_action(action):
     #             "offload_amount": Discrete(max_Q_size, start=1)
     #         }
     #     )
-    flat_target_node = np.array([action.get('target_node')])
-    flat_offload_amount = np.array([action.get('offload_amount')])
+    flat_target_node = np.array([action.get(pe.ACTION_NEIGHBOUR_IDX_FIELD)])
+    flat_source_node = np.array([action.get(pe.ACTION_HANDLER_ID_FIELD)])
+    y = np.concatenate((flat_target_node, flat_source_node), axis=0)
 
-    return np.concatenate((flat_target_node, flat_offload_amount), axis=0)
+    # y = gymnasium.spaces.utils.flatten_space(action)
+    return y
 
 def get_queue(observation):
     # Might need some restructuring if I ever change the shape of the environment. Particulary idf I start using the projection
@@ -38,8 +44,8 @@ def get_queue(observation):
 
 def deflatten_action(flat_a):
     action = {
-        "target_node": encode(flat_a[0]),
-        "offload_amount": encode(flat_a[1])
+        pe.ACTION_NEIGHBOUR_IDX_FIELD: encode(flat_a[0]),
+        pe.ACTION_HANDLER_ID_FIELD: encode(flat_a[1])
     }
     return action
 

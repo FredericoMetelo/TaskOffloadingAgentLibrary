@@ -14,7 +14,7 @@ from tensorflow.keras.layers import Input, Dense
 import matplotlib.pyplot as plt
 
 import peersim_gym
-
+import peersim_gym.envs.PeersimEnv as pe
 
 # Sauces:
 # https://datascience.stackexchange.com/questions/61707/policy-gradient-with-continuous-action-space
@@ -167,9 +167,13 @@ class A2C:
             while not done:
                 print(f'Step: {step}\n')
                 # Interaction Step:
-                a = self.get_action(np.array([state]))
-                action = np.floor(a)
-                next_state, reward, done, _, _ = env.step(fl.deflatten_action(action))
+                action = {
+                    agent: {
+                        pe.ACTION_HANDLER_ID_FIELD: agent.split("_")[1],
+                        pe.ACTION_NEIGHBOUR_IDX_FIELD: np.floor(self.get_action(np.array([state[agent]])))
+                    } for agent in env.agents
+                }
+                next_state, reward, done, _, _ = env.step(action)  # use fl.defllaten() in the future
                 next_state = fl.flatten_observation(next_state)
 
                 # Update history
