@@ -19,7 +19,9 @@ def flatten_observation(observation):
 
     flat_n_i = np.array([observation.get(pe.STATE_NODE_ID_FIELD)])
     flat_Q = observation.get(pe.STATE_Q_FIELD)
-    flat_w = observation.get(pe.STATE_PROCESSING_POWER_FIELD)
+    flat_w = []
+    w = observation.get(pe.STATE_PROCESSING_POWER_FIELD)
+    flat_w = np.array(w).flatten()
     x = np.concatenate((flat_n_i, flat_Q, flat_w), axis=0)
     return x
 
@@ -31,9 +33,8 @@ def flatten_action(action):
     #             "offload_amount": Discrete(max_Q_size, start=1)
     #         }
     #     )
-    flat_target_node = np.array([action.get(pe.ACTION_NEIGHBOUR_IDX_FIELD)])
-    flat_source_node = np.array([action.get(pe.ACTION_HANDLER_ID_FIELD)])
-    y = np.concatenate((flat_target_node, flat_source_node), axis=0)
+    flat_source_node = np.array([action[pe.ACTION_NEIGHBOUR_IDX_FIELD]])
+    y = flat_source_node
 
     # y = gymnasium.spaces.utils.flatten_space(action)
     return y

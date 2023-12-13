@@ -27,6 +27,15 @@ import peersim_gym.envs.PeersimEnv as pe
 #   - Example repository
 
 
+def flatten_state_list(states, agents):
+    res = []
+    for agent in agents:
+        res.append(fl.flatten_observation(states[agent]))
+    return res
+
+def flatten_action_list(actions, agents):
+    return [fl.flatten_action(actions[agent]) for agent in agents]
+
 class A2C:
     # Special thanks to nyck33 for the examples he provided on the A2C, https://github.com/nyck33/openai_my_implements/blob/master/continuous/Pendulum-v0/a2cPendulumColabTested.py
     def __init__(self, input_shape, action_space, output_shape, batch_size=500, epsilon_start=0.7, epsilon_decay=0.01,
@@ -107,14 +116,14 @@ class A2C:
         action = mean + std * epsilon
         # do those Normal distribution shenanigans to change the distribution
         action_target = np.asarray([np.clip(action[0][0], 0, 5)])  # TODO!! Critical!!!! Magic numbers for now
-        action_amount = np.asarray([np.clip(action[0][1], 0, 10)])
-        return np.concatenate((np.rint(action_target), np.rint(action_amount)), axis=0)
+
+        return np.rint(action_target)
 
     def __train(self, s, a, r, s_next, k, fin):
         # Preprocessing
         states = np.array(s)
         actions = np.array(a)
-        actions = np.reshape(actions, (actions.shape[0], 2))  # This line might be redundant
+        actions = np.reshape(actions, (actions.shape[0], self.action_shape))  # This line might be redundant
         discounted_rewards = self._discount_rewards(rewards=r)
         discounted_rewards = tf.convert_to_tensor(np.reshape(discounted_rewards, (discounted_rewards.shape[0], 1)))
         next_states = np.array(s_next)
@@ -142,18 +151,18 @@ class A2C:
         self.critic_optimizer.apply_gradients(zip(grads2, self.critic.trainable_weights))
         return
 
-    def train_model(self, env, num_episodes, print_instead=True):
+    def train_model(self, env, num_episodes, print_instead=True, controllers=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         steps_per_return = 5
         for i in range(num_episodes):
             # Prepare variables for the next run
-            states = []
-            actions = []
-            rewards = []
-            next_states = []
-            dones = []
-            done = False
+            h_states = []
+            h_actions = []
+            h_rewards = []
+            h_next_states = []
+            h_dones = []
+            dones = [False for _ in controllers]
             total_reward = 0
             step = 0
             total_steps = 0
@@ -161,36 +170,36 @@ class A2C:
             score = 0.0
 
             # Reset the state
-            state, _ = env.reset()
-            state = fl.flatten_observation(state)
+            states, _ = env.reset()
+            states = flatten_state_list(states, env.agents)
 
-            while not done:
+            while not is_done(dones):
                 print(f'Step: {step}\n')
                 # Interaction Step:
-                action = {
+                actions = {
                     agent: {
-                        pe.ACTION_HANDLER_ID_FIELD: agent.split("_")[1],
-                        pe.ACTION_NEIGHBOUR_IDX_FIELD: np.floor(self.get_action(np.array([state[agent]])))
-                    } for agent in env.agents
+                        # pe.ACTION_HANDLER_ID_FIELD: agent.split("_")[1], This is now done automatically in the environment
+                        pe.ACTION_NEIGHBOUR_IDX_FIELD: np.floor(self.get_action(np.array([states[idx]])))
+                    } for idx, agent in enumerate(env.agents)
                 }
-                next_state, reward, done, _, _ = env.step(action)  # use fl.defllaten() in the future
-                next_state = fl.flatten_observation(next_state)
-
-                # Update history
-                states.append(state)
-                actions.append(action)
-                rewards.append(reward)
-                next_states.append(next_state)
-                dones.append(done)
+                next_states, rewards, dones, _, _ = env.step(actions)  # use fl.defllaten() in the future
+                next_states = flatten_state_list(next_states, env.agents)
+                for idx, agent in enumerate(env.agents):
+                    # Update history
+                    h_states.append(states[idx])
+                    h_actions.append(fl.flatten_action(actions[agent]))
+                    h_rewards.append(rewards[agent])
+                    score += rewards[agent]
+                    h_next_states.append(next_states[idx])
+                    h_dones.append(dones[agent])
                 # Advance to next iter
-                state = next_state
-                score += reward
+                states = next_states
                 step += 1
                 total_steps += 1
                 # Update metrics
-                if step >= steps_per_return or done:
-                    # In a n step return advantage actor critic scenario, we have
-                    self.__train(states, actions, rewards, next_states, k=step, fin=dones)
+                if step >= steps_per_return or dones:
+                    # In an n step return advantage actor critic scenario, we have
+                    self.__train(h_states, h_actions, h_rewards, h_next_states, k=step, fin=h_dones)
                     step = 0
         # Update final metrics
             avg_episode.append(score / total_steps)
@@ -313,3 +322,5 @@ class A2C:
         #         targets.append(target)
         return advantages, targets
 
+def is_done(bool_array):
+    return all(bool_array)

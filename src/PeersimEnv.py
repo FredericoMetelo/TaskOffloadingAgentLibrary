@@ -47,7 +47,7 @@ def _make_ctr(ctrs_list):
             s += ";"
     return s
 
-controllers = ["0", "5"]
+controllers = ["0"] # , "5" only one for now...
 
 configs={
         "SIZE": "6",
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     all_penalties = []
     agent = A2C(input_shape=shape_obs_flat,
                 output_shape=shape_a_flat,
-                action_space=env.action_space,
+                action_space=env.action_space("worker_0"), # TODO: This is a hack... Fix this ffs
                 batch_size=100,
                 epsilon_start=0.70,
                 epsilon_decay=0.0005,
@@ -136,7 +136,7 @@ if __name__ == '__main__':
                 update_interval=150,
                 learning_rate=0.00001)
 
-    agent.train_model(env, num_episodes, print_instead=True)
+    agent.train_model(env, num_episodes, print_instead=True, controllers=controllers)
 
     # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
     #                               output_shape=shape_a_flat,
