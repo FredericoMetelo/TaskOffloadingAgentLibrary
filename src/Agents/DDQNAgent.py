@@ -1,4 +1,3 @@
-from Networks.DQN import DQN
 import numpy as np
 
 import torch as T
@@ -6,9 +5,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
+from src.Agents.Networks.DQN import DQN
 from src.Utils import utils as utils
 from src.Agents.Agent import Agent
 import peersim_gym.envs.PeersimEnv as pe
+
 
 class DDQNAgent(Agent):
     """
@@ -22,7 +23,9 @@ class DDQNAgent(Agent):
 
     This Class is based on the implementation by "Machine Learning Phil" in https://www.youtube.com/watch?v=wc-FxNENg9U
     """
-    def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=500, epsilon_start=0.7, epsilon_decay=5e-4,
+
+    def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=500, epsilon_start=0.7,
+                 epsilon_decay=5e-4,
                  gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7):
         super().__init__(input_shape, action_space, output_shape, memory_max_size)
         # Parameters:
@@ -44,8 +47,10 @@ class DDQNAgent(Agent):
         self.memory_counter = 0
 
         # Networks
-        self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256, n_actions=self.actions)
-        self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256, n_actions=self.actions)
+        self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
+                           n_actions=self.actions)
+        self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
+                                  n_actions=self.actions)
 
     def train_loop(self, env, num_episodes, print_instead=True, controllers=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
@@ -68,7 +73,8 @@ class DDQNAgent(Agent):
             while not utils.is_done(dones):
                 print(f'Step: {step}\n')
                 # Interaction Step:
-                targets = {agent: np.floor(self.__get_action(np.array([states[idx]]))) for idx, agent in enumerate(agent_list)}
+                targets = {agent: np.floor(self.get_action(np.array([states[idx]]))) for idx, agent in
+                           enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
                 next_states, rewards, dones, _, _ = env.step(actions)
@@ -83,7 +89,8 @@ class DDQNAgent(Agent):
                 total_steps += 1
                 # Update metrics
 
-                self.__learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory, s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
+                self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
+                           s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
 
                 if step % steps_per_return == 0 or dones:
                     # src for the update code https://github.com/dxyang/DQN_pytorch/blob/master/learn.py
@@ -97,11 +104,12 @@ class DDQNAgent(Agent):
             avg_score = np.mean(scores[-100:])
             avg_scores.append(avg_score)
 
-        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
-        self.__plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
+        self.plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
+                  print_instead=print_instead)
+        self.plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
         env.close()
 
-    def __get_action(self, observation):
+    def get_action(self, observation):
         # In this case, we are using a epsilon-greedy policy
         if np.random.random() < self.epsilon:
             action = np.random.choice(self.actions)
@@ -115,7 +123,6 @@ class DDQNAgent(Agent):
             action = T.argmax(actions).item()
         return action
 
-
     def __store_transition(self, state, action, reward, n_state, done):
         index = self.memory_counter % self.memory_size  # Allows overwriting old memories
         self.state_memory[index] = state
@@ -125,34 +132,34 @@ class DDQNAgent(Agent):
         self.terminal_memory[index] = done
         self.memory_size += 1
 
+    def learn(self, s, a, r, s_next, k, fin):
+        if self.memory_counter < self.memory_size:
+            return
+        # We need to zero the gradient optimizer in Pytorch first
+        self.Q_value.optimizer.zero_grad()
 
+        max_mem = min(self.memory_counter,
+                      self.memory_size)  # Select a sub-set of the memory by picking batch_size random indexes between 0 and max_mem
+        batch = np.random.choice(max_mem, self.batch_size, replace=False)
+        # Turns out we need the batch indexes for proper array slicing...
+        batch_index = np.arange(self.batch_size, dtype=np.int32)
 
+        state_batch = T.tensor(s[batch]).to(self.Q_value.device)
+        next_state_batch = T.tensor(s_next[batch]).to(self.Q_value.device)
+        reward_batch = T.tensor(r[batch]).to(self.Q_value.device)
+        terminal_batch = T.tensor(fin[batch]).to(self.Q_value.device)
 
+        action_batch = a[
+            batch]  # This does not need to be a tensor, we use this to get the target Q value for the aciton we took.
 
-    def __learn(self, s, a, r, s_next, k, fin):
-            if self.memory_counter < self.memory_size:
-                return
-            # We need to zero the gradient optimizer in Pytorch first
-            self.Q_value.optimizer.zero_grad()
+        q_value = self.Q_value.forward(state_batch)[
+            batch_index, action_batch]  # This is the Q value for the action we took
+        q_next_state = self.target_Q_value.forward(next_state_batch)  # This is the Q value for the next state
+        q_next_state[terminal_batch] = 0.0  # If we are in a terminal state, the Q value is 0, we only ocunt the rewards
 
-            max_mem = min(self.memory_counter, self.memory_size)   # Select a sub-set of the memory by picking batch_size random indexes between 0 and max_mem
-            batch = np.random.choice(max_mem, self.batch_size, replace=False)
-            # Turns out we need the batch indexes for proper array slicing...
-            batch_index = np.arange(self.batch_size, dtype=np.int32)
+        q_value_target = reward_batch + self.gamma * T.max(q_next_state, dim=1)[
+            0]  # [0] here is because the torch.max() returns a tuple (values, indexes)
 
-            state_batch = T.tensor(s[batch]).to(self.Q_value.device)
-            next_state_batch = T.tensor(s_next[batch]).to(self.Q_value.device)
-            reward_batch = T.tensor(r[batch]).to(self.Q_value.device)
-            terminal_batch = T.tensor(fin[batch]).to(self.Q_value.device)
-
-            action_batch = a[batch] # This does not need to be a tensor, we use this to get the target Q value for the aciton we took.
-
-            q_value = self.Q_value.forward(state_batch)[batch_index, action_batch]  # This is the Q value for the action we took
-            q_next_state = self.target_Q_value.forward(next_state_batch)  # This is the Q value for the next state
-            q_next_state[terminal_batch] = 0.0  # If we are in a terminal state, the Q value is 0, we only ocunt the rewards
-
-            q_value_target = reward_batch + self.gamma * T.max(q_next_state, dim=1)[0] # [0] here is because the torch.max() returns a tuple (values, indexes)
-
-            loss = self.Q_value.loss(q_value, q_value_target).to(self.Q_value.device) # Calculate the loss
-            loss.backward()  # back propagation
-            self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_end else self.epsilon_end
+        loss = self.Q_value.loss(q_value, q_value_target).to(self.Q_value.device)  # Calculate the loss
+        loss.backward()  # back propagation
+        self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_end else self.epsilon_end

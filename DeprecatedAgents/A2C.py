@@ -84,7 +84,7 @@ class A2C(Agent):
         critic.summary()
         return actor, critic
 
-    def __get_action(self, observation):
+    def get_action(self, observation):
         mean, std = self.actor.predict(observation)
         var = square(std)
         epsilon = np.random.randn(fl.flatten_action(self.action_space).size)
@@ -95,7 +95,7 @@ class A2C(Agent):
 
         return np.rint(action_target)
 
-    def __learn(self, s, a, r, s_next, k, fin):
+    def learn(self, s, a, r, s_next, k, fin):
         # Preprocessing
         states = np.array(s)
         actions = np.array(a)

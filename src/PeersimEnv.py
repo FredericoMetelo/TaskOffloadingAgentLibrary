@@ -8,7 +8,8 @@ import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from matplotlib import pyplot as plt
 
-from DeprecatedAgents.A2C import A2C
+import Agents
+from Agents.DDQNAgent import DDQNAgent
 from src.Utils import utils as fl
 
 
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     # For plotting metrics
     all_epochs = []
     all_penalties = []
-    agent = A2C(input_shape=shape_obs_flat,
+    agent = DDQNAgent(input_shape=shape_obs_flat,
                 output_shape=shape_a_flat,
                 action_space=env.action_space("worker_0"), # TODO: This is a hack... Fix this ffs
                 batch_size=100,
