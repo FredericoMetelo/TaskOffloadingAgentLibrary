@@ -4,18 +4,12 @@ import os
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
-import gymnasium as gym
 import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from matplotlib import pyplot as plt
 
-from Agents.DQNAgent import DQN
-from src.Agents.A2C import A2C
-from src.ControlAlgorithms.DoNothingControl import DoNothingControl
-from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
-from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
-from src.Utils import flattenutils as fl
-import configparser
+from DeprecatedAgents.A2C import A2C
+from src.Utils import utils as fl
 
 
 def print_all_csv(dir="./Plots/"):
@@ -136,7 +130,7 @@ if __name__ == '__main__':
                 update_interval=150,
                 learning_rate=0.00001)
 
-    agent.train_model(env, num_episodes, print_instead=True, controllers=controllers)
+    agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
 
     # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
     #                               output_shape=shape_a_flat,

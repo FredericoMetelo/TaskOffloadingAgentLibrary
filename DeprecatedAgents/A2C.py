@@ -1,20 +1,18 @@
 # Inspired by DanielPalaio's Project in:
 # https://github.com/DanielPalaio/LunarLander-v2_DeepRL/blob/main/DQN/replay_buffer.py
-from tensorflow import multiply, divide
+from tensorflow import divide
 from tensorflow.keras.optimizers import Adam
-from tensorflow.python.keras.backend import placeholder, mean, square, function, sqrt, exp, epsilon, log, constant
+from tensorflow.python.keras.backend import mean, square, exp, epsilon, log, constant
 from tensorflow.python.keras.layers import Lambda
 
-from src.Agents.ReplayMemory import ReplayMemory
-from src.Utils import flattenutils as fl
+from src.Agents.Agent import Agent
+from DeprecatedAgents.ReplayMemory import ReplayMemory
+from src.Utils import utils as fl
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Dense
-import matplotlib.pyplot as plt
 
-import peersim_gym
-import peersim_gym.envs.PeersimEnv as pe
 
 # Sauces:
 # https://datascience.stackexchange.com/questions/61707/policy-gradient-with-continuous-action-space
@@ -26,35 +24,13 @@ import peersim_gym.envs.PeersimEnv as pe
 # https://github.com/nyck33/openai_my_implements/blob/master/continuous/Pendulum-v0/a2cPendulumColabTested.py
 #   - Example repository
 
-
-def flatten_state_list(states, agents):
-    res = []
-    for agent in agents:
-        res.append(fl.flatten_observation(states[agent]))
-    return res
-
-def flatten_action_list(actions, agents):
-    return [fl.flatten_action(actions[agent]) for agent in agents]
-
-class A2C:
+class A2C(Agent):
     # Special thanks to nyck33 for the examples he provided on the A2C, https://github.com/nyck33/openai_my_implements/blob/master/continuous/Pendulum-v0/a2cPendulumColabTested.py
     def __init__(self, input_shape, action_space, output_shape, batch_size=500, epsilon_start=0.7, epsilon_decay=0.01,
                  gamma=0.7,
                  epsilon_end=0.01, update_interval=150, learning_rate=0.7):
-        # Parameters:
-        self.batch_size = batch_size
-        self.epsilon = epsilon_start
-        self.epsilon_decay = epsilon_decay
-        self.epsilon_end = epsilon_end
-        self.gamma = gamma
-        self.input_shape = input_shape
-        self.action_shape = output_shape
-        self.learning_rate = learning_rate
-        self.update_interval = update_interval
-        self.action_space = action_space
-        self.actions = output_shape  # There are 2 possible outputs.
-        self.step = 0
-
+        super().__init__(input_shape, action_space, output_shape, batch_size, epsilon_start, epsilon_decay, gamma,
+                         epsilon_end, update_interval, learning_rate)
 
         self.control_type = "A2C"
         self.experience = ReplayMemory(self.batch_size, input_shape=input_shape)
@@ -108,7 +84,7 @@ class A2C:
         critic.summary()
         return actor, critic
 
-    def get_action(self, observation):
+    def __get_action(self, observation):
         mean, std = self.actor.predict(observation)
         var = square(std)
         epsilon = np.random.randn(fl.flatten_action(self.action_space).size)
@@ -119,7 +95,7 @@ class A2C:
 
         return np.rint(action_target)
 
-    def __train(self, s, a, r, s_next, k, fin):
+    def __learn(self, s, a, r, s_next, k, fin):
         # Preprocessing
         states = np.array(s)
         actions = np.array(a)
@@ -151,100 +127,6 @@ class A2C:
         self.critic_optimizer.apply_gradients(zip(grads2, self.critic.trainable_weights))
         return
 
-    def train_model(self, env, num_episodes, print_instead=True, controllers=None):
-        # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
-        scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
-        steps_per_return = 5
-        for i in range(num_episodes):
-            # Prepare variables for the next run
-            h_states = []
-            h_actions = []
-            h_rewards = []
-            h_next_states = []
-            h_dones = []
-            dones = [False for _ in controllers]
-            total_reward = 0
-            step = 0
-            total_steps = 0
-            # Episode metrics
-            score = 0.0
-
-            # Reset the state
-            states, _ = env.reset()
-            states = flatten_state_list(states, env.agents)
-
-            while not is_done(dones):
-                print(f'Step: {step}\n')
-                # Interaction Step:
-                actions = {
-                    agent: {
-                        # pe.ACTION_HANDLER_ID_FIELD: agent.split("_")[1], This is now done automatically in the environment
-                        pe.ACTION_NEIGHBOUR_IDX_FIELD: np.floor(self.get_action(np.array([states[idx]])))
-                    } for idx, agent in enumerate(env.agents)
-                }
-                next_states, rewards, dones, _, _ = env.step(actions)  # use fl.defllaten() in the future
-                next_states = flatten_state_list(next_states, env.agents)
-                for idx, agent in enumerate(env.agents):
-                    # Update history
-                    h_states.append(states[idx])
-                    h_actions.append(fl.flatten_action(actions[agent]))
-                    h_rewards.append(rewards[agent])
-                    score += rewards[agent]
-                    h_next_states.append(next_states[idx])
-                    h_dones.append(dones[agent])
-                # Advance to next iter
-                states = next_states
-                step += 1
-                total_steps += 1
-                # Update metrics
-                if step >= steps_per_return or dones:
-                    # In an n step return advantage actor critic scenario, we have
-                    self.__train(h_states, h_actions, h_rewards, h_next_states, k=step, fin=h_dones)
-                    step = 0
-        # Update final metrics
-            avg_episode.append(score / total_steps)
-            scores.append(score)
-            episodes.append(i)
-            avg_score = np.mean(scores[-100:])
-            avg_scores.append(avg_score)
-
-        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
-        self.__plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
-        env.close()
-
-    def __plot(self, x, scores, avg_scores, per_episode, print_instead=False):
-        # Setup for print
-        fig, ax = plt.subplots(ncols=3, nrows=1, sharex=True)  # Create 1x3 plot
-
-        # Print the metrics:
-        ax[0].set_title("Scores")
-        ax[0].plot(x, scores)
-
-        ax[1].set_title("Average Scores")
-        ax[1].plot(x, avg_scores)
-
-        ax[2].set_title("Average Score in Episode")
-        ax[2].plot(x, per_episode)
-
-        if print_instead:
-            plt.savefig(f"./Plots/plt_{self.control_type}")
-        else:
-            plt.show()
-        return
-    def __plot2(self, x, per_episode, title=None, print_instead=False, csv_dump=True):
-        plt.plot(x, per_episode)
-        plt.ylabel('Average Score')
-        if not (title is None):
-            plt.title(title)
-        if print_instead:
-            plt.savefig(f"./Plots/plt_{self.control_type}")
-        else:
-            plt.show()
-
-        if csv_dump:
-            with open(f"./Plots/{self.control_type}.csv", 'ab') as f:
-                data = np.column_stack((x, per_episode))
-                np.savetxt(f, data, delimiter=',', header='x,per_episode', comments='')
     def _discount_rewards(self, rewards):
         """
         This method will compute an array with the discounted reward for each step.

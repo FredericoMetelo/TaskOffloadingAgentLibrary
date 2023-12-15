@@ -3,15 +3,12 @@
 
 from tensorflow.keras.optimizers import Adam
 
-from src.Agents.ReplayMemory import ReplayMemory
-from src.Utils import flattenutils as fl
+from DeprecatedAgents.ReplayMemory import ReplayMemory
+from src.Utils import utils as fl
 import numpy as np
-import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Input, Dense
 import matplotlib.pyplot as plt
-
-import peersim_gym
 
 
 # For the actor Critic: https://www.tensorflow.org/tutorials/reinforcement_learning/actor_critic

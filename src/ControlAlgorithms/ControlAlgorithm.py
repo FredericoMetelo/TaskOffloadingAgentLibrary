@@ -1,5 +1,4 @@
 # This is a sample Python script.
-import matplotlib
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
@@ -7,12 +6,10 @@ import matplotlib
 # https://github.com/DanielPalaio/LunarLander-v2_DeepRL/blob/main/DQN/replay_buffer.py
 
 
-from src.Agents.ReplayMemory import ReplayMemory
-from src.Utils import flattenutils as fl
+from src.Utils import utils as fl
 import numpy as np
 import matplotlib.pyplot as plt
-from abc import abstractmethod, ABC
-import peersim_gym
+from abc import abstractmethod
 
 
 class ControlAlgorithm:

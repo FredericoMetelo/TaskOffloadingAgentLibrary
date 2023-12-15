@@ -61,3 +61,22 @@ def encode(obj):
     if isinstance(obj, np.ndarray):
         return obj.tolist()
     return None
+
+def flatten_state_list(self, states, agents):
+    res = []
+    for agent in agents:
+        res.append(flatten_observation(states[agent]))
+    return res
+
+def flatten_action_list(self, actions, agents):
+    return [flatten_action(actions[agent]) for agent in agents]
+
+def is_done( bool_array):
+    return all(bool_array)
+def make_action(targets, agents):
+    return {
+        agent: {
+            # pe.ACTION_HANDLER_ID_FIELD: agent.split("_")[1], This is now done automatically in the environment
+            pe.ACTION_NEIGHBOUR_IDX_FIELD: targets[agent]
+        } for agent in agents
+    }
