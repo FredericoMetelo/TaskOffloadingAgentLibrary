@@ -54,7 +54,7 @@ class A2CAgent(Agent):
             while not utils.is_done(dones):
                 print(f'Step: {step}\n')
                 # Interaction Step:
-                targets = {agent: np.floor(self.__get_action(np.array([states[idx]]))) for idx, agent in
+                targets = {agent: np.floor(self.get_action(np.array([states[idx]]))) for idx, agent in
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
@@ -93,7 +93,6 @@ class A2CAgent(Agent):
 
     def get_action(self, observation):
         return self.A2C.choose_action(observation)
-
 
     def __store_agent_step_data(self, states, actions, rewards, next_states, dones, agent_list):
         total_rwrd = 0
