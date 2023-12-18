@@ -20,19 +20,20 @@ class Agent(ABC):
         self.control_type = None
 
     @abstractmethod
-    def __get_action(self, observation):
+    def get_action(self, observation):
         pass
 
     @abstractmethod
-    def __learn(self, s, a, r, s_next, k, fin):
+    def learn(self, s, a, r, s_next, k, fin):
         pass
 
+    @abstractmethod
     def train_loop(self, env: PeersimEnv, num_episodes, print_instead=False, controllers=None):
         pass
 
 
 
-    def __plot(self, x, scores, avg_scores, per_episode, print_instead=False):
+    def plot(self, x, scores, avg_scores, per_episode, print_instead=False):
         # Setup for print
         fig, ax = plt.subplots(ncols=3, nrows=1, sharex=True)  # Create 1x3 plot
 
@@ -52,7 +53,7 @@ class Agent(ABC):
             plt.show()
         return
 
-    def __plot2(self, x, per_episode, title=None, print_instead=False, csv_dump=True):
+    def plot2(self, x, per_episode, title=None, print_instead=False, csv_dump=True):
         plt.plot(x, per_episode)
         plt.ylabel('Average Score')
         if not (title is None):
