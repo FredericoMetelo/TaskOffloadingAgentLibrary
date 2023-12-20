@@ -12,6 +12,8 @@ class ActorCritic(nn.Module):
     - https://github.com/simoninithomas/simple-A2C/blob/master/3_A2C-nstep-TUTORIAL.ipynb
     - https://www.youtube.com/watch?v=OcIx_TBu90Q&t=1050s  | Video with tips of how to implement A3C
     - https://arxiv.org/pdf/1602.01783.pdf | Original A3C Paper
+
+    - https://medium.com/@asteinbach/rl-introduction-simple-actor-critic-for-continuous-actions-4e22afb712 | AC with a continuous action space.
     """
 
     def __init__(self, lr, input_dims, fc1_dims, fc2_dims, n_actions, gamma=0.99):
@@ -33,7 +35,7 @@ class ActorCritic(nn.Module):
         self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         # Actor Head:
-        self.actor = nn.Linear(self.fc2_dims, self.n_actions)  # Approx Policy = Outputs an Action.
+        self.actor = nn.Linear(self.fc2_dims, self.n_actions[0])  # Approx Policy = Outputs an Action.
         # Critic Head:
         self.critic = nn.Linear(self.fc2_dims, 1)  # Approx Vp = Outputs a Value Function.
 
@@ -44,7 +46,9 @@ class ActorCritic(nn.Module):
         # self.loss = nn.MSELoss()
         # GPU support, in torch we need to specify where we are sending the Network.
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+
         self.to(self.device)
+
 
     def remember(self, state, action, reward, done):
         self.state_memory.append(state)

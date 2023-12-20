@@ -1,5 +1,6 @@
 import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
+from torchsummary import summary
 
 from src.Agents.Agent import Agent
 from src.Agents.Networks.A2C import ActorCritic
@@ -13,7 +14,7 @@ class A2CAgent(Agent):
     - https://www.youtube.com/watch?v=OcIx_TBu90Q&t=1050s  | Video with tips of how to implement A3C
     """
 
-    def __init__(self, input_shape, action_space, output_shape, agents, learning_rate=0.7, gamma=0.4,
+    def __init__(self, input_shape, action_space, output_shape, agents, learning_rate=0.7, gamma=0.4, steps_for_return=150,
                  control_type="A2C"):
         super().__init__(input_shape, action_space, output_shape, learning_rate)
         self.gamma = gamma
@@ -21,7 +22,7 @@ class A2CAgent(Agent):
 
         self.A2C = ActorCritic(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
                                n_actions=self.actions)
-
+        summary(self.A2C, input_size=self.input_shape)
         self.agent_states = {
             agent: {
                 'state': [],
@@ -40,7 +41,7 @@ class A2CAgent(Agent):
         for i in range(num_episodes):
             # Prepare variables for the next run
             dones = [False for _ in controllers]
-            agent_list = env.agents
+
             total_reward = 0
             step = 0
             total_steps = 0
@@ -49,6 +50,7 @@ class A2CAgent(Agent):
 
             # Reset the state
             states, _ = env.reset()
+            agent_list = env.agents
             states = utils.flatten_state_list(states, agent_list)
 
             while not utils.is_done(dones):
@@ -59,7 +61,7 @@ class A2CAgent(Agent):
                 actions = utils.make_action(targets, agent_list)
 
                 next_states, rewards, dones, _, _ = env.step(actions)
-                next_states = utils.flatten_state_list(next_states, agent_list)
+                next_states = utils.flatten_state_list(states=next_states, agents=agent_list)
                 total_reward_in_step = self.__store_agent_step_data(states, actions, rewards, next_states, dones,
                                                                     agent_list)
                 score += total_reward_in_step
@@ -67,15 +69,12 @@ class A2CAgent(Agent):
                 states = next_states
                 step += 1
                 total_steps += 1
-                # Update metrics
-
-                self.__learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
-                             s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
-
                 if step % steps_per_return == 0 or dones:
-                    # src for the update code https://github.com/dxyang/DQN_pytorch/blob/master/learn.py
-                    # Update target network
-                    self.target_Q_value.load_state_dict(self.Q_value.state_dict())
+                    # Here we will learn the paths from all the agents
+                    for agent in agent_list:
+                        s, a, r, s_next, fin = self.__get_agent_step_data(agent)
+                        if s and a and r and s_next and fin: # Check if fin is always not empty as well
+                            self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin)
                     step = 0
             # Update final metrics
             avg_episode.append(score / total_steps)
@@ -84,12 +83,16 @@ class A2CAgent(Agent):
             avg_score = np.mean(scores[-100:])
             avg_scores.append(avg_score)
 
-        self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
+        self.plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
                     print_instead=print_instead)
-        self.__plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
+        self.plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
 
-    def __learn(self, s, a, r, s_next, k, fin):
-        pass
+    def learn(self, s, a, r, s_next, k, fin):
+        self.A2C.remember_batch(states=s, actions=a, rewards=r, dones=fin)  # States should be ordered.
+        self.A2C.optimizer.zero_grad()
+        loss = self.A2C.calculate_loss(fin)
+        loss.backward()
+        self.A2C.clear_memory()
 
     def get_action(self, observation):
         return self.A2C.choose_action(observation)

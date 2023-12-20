@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 
 import Agents
 from Agents.DDQNAgent import DDQNAgent
+from src.Agents.A2CAgent import A2CAgent
 from src.Utils import utils as fl
 
 
@@ -108,7 +109,6 @@ if __name__ == '__main__':
 
     print("Action Space {}".format(shape_a_flat))
     print("State Space {}".format(shape_obs_flat))
-    # (taxi row, taxi column, passenger index, destination index)
 
     alpha = 0.1
     gamma = 0.6
@@ -120,17 +120,24 @@ if __name__ == '__main__':
     # For plotting metrics
     all_epochs = []
     all_penalties = []
-    agent = DDQNAgent(input_shape=shape_obs_flat,
-                output_shape=shape_a_flat,
-                action_space=env.action_space("worker_0"), # TODO: This is a hack... Fix this ffs
-                batch_size=100,
-                epsilon_start=0.70,
-                epsilon_decay=0.0005,
-                epsilon_end=0.01,
-                gamma=0.55,
-                update_interval=150,
-                learning_rate=0.00001)
+    # agent = DDQNAgent(input_shape=shape_obs_flat,
+    #             output_shape=shape_a_flat,
+    #             action_space=env.action_space("worker_0"), # TODO: This is a hack... Fix this ffs
+    #             batch_size=100,
+    #             epsilon_start=0.70,
+    #             epsilon_decay=0.0005,
+    #             epsilon_end=0.01,
+    #             gamma=0.55,
+    #             update_interval=150,
+    #             learning_rate=0.00001)
 
+    agent = A2CAgent(input_shape=shape_obs_flat,
+                     action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
+                     output_shape=shape_a_flat,
+                     agents=env.possible_agents,
+                     gamma=0.55,
+                     steps_for_return=150,
+                     learning_rate=0.00001)
     agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
 
     # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,

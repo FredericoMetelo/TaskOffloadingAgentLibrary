@@ -39,9 +39,11 @@ def flatten_action(action):
     # y = gymnasium.spaces.utils.flatten_space(action)
     return y
 
+
 def get_queue(observation):
     # Might need some restructuring if I ever change the shape of the environment. Particulary idf I start using the projection
     return observation[1:-1]
+
 
 def deflatten_action(flat_a):
     action = {
@@ -62,17 +64,22 @@ def encode(obj):
         return obj.tolist()
     return None
 
-def flatten_state_list(self, states, agents):
+
+def flatten_state_list(states, agents):
     res = []
     for agent in agents:
         res.append(flatten_observation(states[agent]))
     return res
 
-def flatten_action_list(self, actions, agents):
+
+def flatten_action_list(actions, agents):
     return [flatten_action(actions[agent]) for agent in agents]
 
-def is_done( bool_array):
+
+def is_done(bool_array):
     return all(bool_array)
+
+
 def make_action(targets, agents):
     return {
         agent: {
