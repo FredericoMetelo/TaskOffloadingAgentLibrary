@@ -1,16 +1,26 @@
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
-import numpy as np
+from torch import optim
+from torch.distributions import Categorical
+import os
+
 
 # src: https://www.youtube.com/watch?v=wc-FxNENg9U
 
 # Every Class that extends functionality of base NN layers derives from nn.Module, this gives access to parameters
 # for optimization and does backpropagation for us
 class DQN(nn.Module):
-    def __int__(self, lr, input_dims, fc1_dims, fc2_dims, n_actions):
+    """
+    Deep Q Network
+    Honestly, just trying to get this to work. So Im leaving this temporary comment.
+    """
+
+    def __init__(self, lr, input_dims, fc1_dims, fc2_dims, n_actions, gamma=0.99):
         super(DQN, self).__init__()
+
+        # Gamma makes no sense here, but for some reason this does not work without it.
+
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
@@ -22,12 +32,12 @@ class DQN(nn.Module):
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
         self.fc3 = nn.Linear(self.fc2_dims, self.n_actions)
 
-        # Adam is a variation of SGD
         self.optimizer = optim.Adam(self.parameters(), lr=lr)
         # MSE is the loss function
         self.loss = nn.MSELoss()
         # GPU support, in torch we need to specify where we are sending the Network.
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+
         self.to(self.device)
 
     def forward(self, state):

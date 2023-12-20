@@ -4,6 +4,7 @@ import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torchsummary import summary
 
 from src.Agents.Networks.DQN import DQN
 from src.Utils import utils as utils
@@ -25,8 +26,7 @@ class DDQNAgent(Agent):
     """
 
     def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=500, epsilon_start=0.7,
-                 epsilon_decay=5e-4,
-                 gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7):
+                 epsilon_decay=5e-4, gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7, control_type="DQN"):
         super().__init__(input_shape, action_space, output_shape, memory_max_size)
         # Parameters:
         self.epsilon = epsilon_start
@@ -46,11 +46,14 @@ class DDQNAgent(Agent):
         self.terminal_memory = np.zeros(self.memory_size, dtype=np.bool)
         self.memory_counter = 0
 
-        # Networks
+        # Networks - For some reaon couldn't use the original constructor on the laptop. This has taken too much time
+        # so Im hacking it a little. Fix this later.
         self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
-                           n_actions=self.actions)
+                           n_actions=self.action_shape)
         self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
-                                  n_actions=self.actions)
+                           n_actions=self.action_shape)
+        summary(self.Q_value, input_size=self.input_shape)
+        summary(self.target_Q_value, input_size=self.input_shape)
 
     def train_loop(self, env, num_episodes, print_instead=True, controllers=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
@@ -81,7 +84,7 @@ class DDQNAgent(Agent):
                 next_states = utils.flatten_state_list(next_states, agent_list)
                 for idx, agent in enumerate(agent_list):
                     # Update history
-                    self.__store_transition(states[idx], actions[agent], rewards[agent], next_states[idx], dones[idx])
+                    self.__store_transition(states[idx], actions[agent]['neighbourIndex'], rewards[agent], next_states[idx], dones[agent])
                     score += rewards[agent]
                 # Advance to next iter
                 states = next_states
@@ -96,7 +99,7 @@ class DDQNAgent(Agent):
                     # src for the update code https://github.com/dxyang/DQN_pytorch/blob/master/learn.py
                     # Update target network
                     self.target_Q_value.load_state_dict(self.Q_value.state_dict())
-                    step = 0
+                    step += 1
             # Update final metrics
             avg_episode.append(score / total_steps)
             scores.append(score)
@@ -116,7 +119,7 @@ class DDQNAgent(Agent):
         else:
             # We want to use the target network to get the action, network is in the device. So we send the observation
             # there as well.
-            state = T.tensor([observation]).to(self.Q_value.device)
+            state = T.tensor([observation], dtype=T.float32).to(self.Q_value.device)
             actions = self.Q_value.forward(state)
             # We get the index of the highest Q value. This is returned in a tensor, we use item() to convertit to
             # a scaler

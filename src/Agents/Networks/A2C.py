@@ -39,11 +39,8 @@ class ActorCritic(nn.Module):
         # Critic Head:
         self.critic = nn.Linear(self.fc2_dims, 1)  # Approx Vp = Outputs a Value Function.
 
-        # Adam is a variation of SGD
         self.optimizer = T.optim.Adam(self.parameters(), lr=lr)
 
-        # MSE is the loss function
-        # self.loss = nn.MSELoss()
         # GPU support, in torch we need to specify where we are sending the Network.
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 

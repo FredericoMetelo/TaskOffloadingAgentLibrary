@@ -12,7 +12,7 @@ import Agents
 from Agents.DDQNAgent import DDQNAgent
 from src.Agents.A2CAgent import A2CAgent
 from src.Utils import utils as fl
-
+import traceback
 
 def print_all_csv(dir="./Plots/"):
     # Help from ChatGPT
@@ -98,10 +98,13 @@ configs={
 if __name__ == '__main__':
 
     env = PeersimEnv(configs=configs, simtype="basic", log_dir='logs/')
+    env.reset()
 
     obs = env.observation_space("worker_0")
     flat_obs = fl.flatten_observation(obs.sample())
     shape_obs_flat = np.shape(flat_obs)
+
+    max_neighbours = env.max_neighbours
 
     action = env.action_space("worker_0")
     flat_a = fl.flatten_action(action.sample())
@@ -120,25 +123,33 @@ if __name__ == '__main__':
     # For plotting metrics
     all_epochs = []
     all_penalties = []
-    # agent = DDQNAgent(input_shape=shape_obs_flat,
-    #             output_shape=shape_a_flat,
-    #             action_space=env.action_space("worker_0"), # TODO: This is a hack... Fix this ffs
-    #             batch_size=100,
-    #             epsilon_start=0.70,
-    #             epsilon_decay=0.0005,
-    #             epsilon_end=0.01,
-    #             gamma=0.55,
-    #             update_interval=150,
-    #             learning_rate=0.00001)
+    try:
+        agent = DDQNAgent(input_shape=shape_obs_flat,
+                    output_shape=max_neighbours,
+                    action_space=env.action_space("worker_0"), # TODO: This is a hack... Fix this ffs
+                    batch_size=100,
+                    epsilon_start=0.70,
+                    epsilon_decay=0.0005,
+                    epsilon_end=0.01,
+                    gamma=0.55,
+                    update_interval=150,
+                    learning_rate=0.00001)
 
-    agent = A2CAgent(input_shape=shape_obs_flat,
-                     action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
-                     output_shape=shape_a_flat,
-                     agents=env.possible_agents,
-                     gamma=0.55,
-                     steps_for_return=150,
-                     learning_rate=0.00001)
-    agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
+        # agent = A2CAgent(input_shape=shape_obs_flat,
+        #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
+        #                  output_shape=shape_a_flat,
+        #                  agents=env.possible_agents,
+        #                  gamma=0.55,
+        #                  steps_for_return=150,
+        #                  learning_rate=0.00001)
+        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
+
+        print("Training finished.\n")
+
+    except Exception:
+        print(traceback.format_exc())
+        print("Training Failed. Miserably.")
+        env.close()
 
     # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
     #                               output_shape=shape_a_flat,
@@ -156,6 +167,5 @@ if __name__ == '__main__':
     # nothing.execute_simulation(env, num_episodes, print_instead=False)
 
     # print_all_csv()
-    print("Training finished.\n")
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

@@ -17,7 +17,7 @@ def flatten_observation(observation):
 
     # x = gymnasium.spaces.utils.flatten_space(observation)
 
-    flat_n_i = np.array([observation.get(pe.STATE_NODE_ID_FIELD)])
+    flat_n_i = np.array([observation.get(pe.STATE_NODE_ID_FIELD)], dtype=float)
     flat_Q = observation.get(pe.STATE_Q_FIELD)
     flat_w = []
     w = observation.get(pe.STATE_PROCESSING_POWER_FIELD)
@@ -77,7 +77,11 @@ def flatten_action_list(actions, agents):
 
 
 def is_done(bool_array):
-    return all(bool_array)
+    # TODO this is what is broken
+    for agent, done in bool_array:
+        if not done:
+            return False
+    return True
 
 
 def make_action(targets, agents):
