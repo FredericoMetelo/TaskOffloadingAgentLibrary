@@ -41,7 +41,7 @@ class DDQNAgent(Agent):
         self.memory_size = memory_max_size
         self.state_memory = np.zeros((self.memory_size, *self.input_shape), dtype=np.float32)
         self.reward_memory = np.zeros(self.memory_size, dtype=np.float32)
-        self.action_memory = np.zeros((self.memory_size, self.actions), dtype=np.float32)
+        self.action_memory = np.zeros((self.memory_size, 1), dtype=np.float32)  # Hard coded, represents the target only
         self.new_state_memory = np.zeros((self.memory_size, *self.input_shape), dtype=np.float32)
         self.terminal_memory = np.zeros(self.memory_size, dtype=np.bool)
         self.memory_counter = 0
@@ -55,18 +55,26 @@ class DDQNAgent(Agent):
         summary(self.Q_value, input_size=self.input_shape)
         summary(self.target_Q_value, input_size=self.input_shape)
 
+        self.amount_of_metrics = 50
+        self.last_losses = np.zeros(self.amount_of_metrics)
+        self.last_rewards = np.zeros(self.amount_of_metrics)
+
     def train_loop(self, env, num_episodes, print_instead=True, controllers=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         steps_per_return = 5
+
+        last_loss = None
+        cumulative_reward = 0
+        avg_reward = 0
+        total_steps = 0
+        episode_number = 0
         for i in range(num_episodes):
             # Prepare variables for the next run
             dones = [False for _ in controllers]
             agent_list = env.agents
-            total_reward = 0
+            total_reward_in_episode = 0
             step = 0
-            total_steps = 0
-            # Episode metrics
             score = 0.0
 
             # Reset the state
@@ -91,8 +99,10 @@ class DDQNAgent(Agent):
                 step += 1
                 total_steps += 1
                 # Update metrics
+                cumulative_reward += score
+                avg_reward = cumulative_reward / total_steps
 
-                self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
+                last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
                            s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
 
                 if step % steps_per_return == 0 or dones:
@@ -100,12 +110,14 @@ class DDQNAgent(Agent):
                     # Update target network
                     self.target_Q_value.load_state_dict(self.Q_value.state_dict())
                     step += 1
+                self.get_stats(last_loss, score, avg_reward, cumulative_reward, total_steps, step, episode_number, env)
             # Update final metrics
             avg_episode.append(score / total_steps)
             scores.append(score)
             episodes.append(i)
             avg_score = np.mean(scores[-100:])
             avg_scores.append(avg_score)
+            episode_number += 1
 
         self.plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
                   print_instead=print_instead)
@@ -119,7 +131,7 @@ class DDQNAgent(Agent):
         else:
             # We want to use the target network to get the action, network is in the device. So we send the observation
             # there as well.
-            state = T.tensor([observation], dtype=T.float32).to(self.Q_value.device)
+            state = T.tensor(np.array([observation]), dtype=T.float32).to(self.Q_value.device)
             actions = self.Q_value.forward(state)
             # We get the index of the highest Q value. This is returned in a tensor, we use item() to convertit to
             # a scaler
@@ -133,7 +145,7 @@ class DDQNAgent(Agent):
         self.reward_memory[index] = reward
         self.new_state_memory[index] = n_state
         self.terminal_memory[index] = done
-        self.memory_size += 1
+        self.memory_counter += 1
 
     def learn(self, s, a, r, s_next, k, fin):
         if self.memory_counter < self.memory_size:
@@ -152,17 +164,34 @@ class DDQNAgent(Agent):
         reward_batch = T.tensor(r[batch]).to(self.Q_value.device)
         terminal_batch = T.tensor(fin[batch]).to(self.Q_value.device)
 
-        action_batch = a[
-            batch]  # This does not need to be a tensor, we use this to get the target Q value for the aciton we took.
+        action_batch = a[batch]
+        # This does not need to be a tensor, we use this to get the target Q value for the aciton we took.
 
         q_value = self.Q_value.forward(state_batch)[
             batch_index, action_batch]  # This is the Q value for the action we took
         q_next_state = self.target_Q_value.forward(next_state_batch)  # This is the Q value for the next state
         q_next_state[terminal_batch] = 0.0  # If we are in a terminal state, the Q value is 0, we only ocunt the rewards
 
-        q_value_target = reward_batch + self.gamma * T.max(q_next_state, dim=1)[
-            0]  # [0] here is because the torch.max() returns a tuple (values, indexes)
+        q_value_target = reward_batch + self.gamma * T.max(q_next_state, dim=1)[0]
+        # [0] here is because the torch.max() returns a tuple (values, indexes)
 
         loss = self.Q_value.loss(q_value, q_value_target).to(self.Q_value.device)  # Calculate the loss
         loss.backward()  # back propagation
         self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_end else self.epsilon_end
+        return loss.item()
+
+    def get_stats(self, last_loss, last_reward, avg_reward, cumulative_reward, total_steps, step, episode_number, env):
+        index = total_steps % self.amount_of_metrics
+        self.last_losses[index] = last_loss
+        self.last_rewards[index] = avg_reward
+
+        print(f'Episode: {episode_number}')
+        print(f'Current Step: {step}')
+        print(f'Last loss: {last_loss}')
+        print(f'Last reward: {last_reward}')
+        print(f'Last Reward Components: {env.last_reward_components}')
+        print(f'Average loss (from last 50 steps): {sum(self.last_losses)/len(self.last_losses)}')
+        print(f'Average reward (from last 50 steps): {sum(self.last_rewards)/len(self.last_rewards)}')
+        print(f'Cumulative reward: {cumulative_reward}')
+        print(f'Current epsilon: {self.epsilon}')
+        print(f'Total steps: {total_steps}')

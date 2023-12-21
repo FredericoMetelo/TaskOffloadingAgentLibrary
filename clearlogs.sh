@@ -1,0 +1,1 @@
+rm $(pwd)/logs/*.txt

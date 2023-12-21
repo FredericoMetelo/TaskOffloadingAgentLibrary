@@ -11,8 +11,12 @@ from matplotlib import pyplot as plt
 import Agents
 from Agents.DDQNAgent import DDQNAgent
 from src.Agents.A2CAgent import A2CAgent
+from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
+from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
+from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
 from src.Utils import utils as fl
 import traceback
+
 
 def print_all_csv(dir="./Plots/"):
     # Help from ChatGPT
@@ -35,6 +39,7 @@ def print_all_csv(dir="./Plots/"):
     plt.show()
     return
 
+
 def _make_ctr(ctrs_list):
     s = ""
     for i in range(len(ctrs_list)):
@@ -43,57 +48,58 @@ def _make_ctr(ctrs_list):
             s += ";"
     return s
 
-controllers = ["0"] # , "5" only one for now...
 
-configs={
-        "SIZE": "6",
-        "CYCLE": "1",
-        "CYCLES": "1000",
-        "random.seed": "1234567890",
-        "MINDELAY": "0",
-        "MAXDELAY": "0",
-        "DROP": "0",
-        "CONTROLLERS": _make_ctr(controllers),
+controllers = ["0"]  # , "5" only one for now...
 
-        "CLOUD_EXISTS": "1",
-        "NO_LAYERS": "2",
-        "NO_NODES_PER_LAYERS": "5,1",
-        "CLOUD_ACCESS": "0,1",
+configs = {
+    "SIZE": "6",
+    "CYCLE": "1",
+    "CYCLES": "1000",
+    "random.seed": "1234567890",
+    "MINDELAY": "0",
+    "MAXDELAY": "0",
+    "DROP": "0",
+    "CONTROLLERS": _make_ctr(controllers),
 
-        "FREQS": "1e7,3e7",
-        "NO_CORES": "4,8",
-        "Q_MAX": "10,50",
-        "VARIATIONS": "1e3,1e3",
+    "CLOUD_EXISTS": "1",
+    "NO_LAYERS": "2",
+    "NO_NODES_PER_LAYERS": "5,1",
+    "CLOUD_ACCESS": "0,1",
 
-        "protocol.cld.no_vms": "3",
-        "protocol.cld.VMProcessingPower": "1e8",
+    "FREQS": "1e7,3e7",
+    "NO_CORES": "4,8",
+    "Q_MAX": "10,50",
+    "VARIATIONS": "1e3,1e3",
 
-        "init.Net1.r": "500",
+    "protocol.cld.no_vms": "3",
+    "protocol.cld.VMProcessingPower": "1e8",
 
-        "protocol.mng.r_u": "1",
-        "protocol.mng.X_d": "1",
-        "protocol.mng.X_o": "150",
-        "protocol.mng.cycle": "5",
+    "init.Net1.r": "500",
 
-        "protocol.clt.numberOfTasks": "1",
-        "protocol.clt.weight": "1",
-        "protocol.clt.CPI": "1",
-        "protocol.clt.T": "150",
-        "protocol.clt.I": "4e7",
-        "protocol.clt.taskArrivalRate": "0.6",
+    "protocol.mng.r_u": "1",
+    "protocol.mng.X_d": "1",
+    "protocol.mng.X_o": "150",
+    "protocol.mng.cycle": "5",
 
-        "protocol.clt.numberOfDAG": "1",
-        "protocol.clt.dagWeights": "1",
-        "protocol.clt.edges": "",
-        "protocol.clt.maxDeadline": "100",
-        "protocol.clt.vertices": "1",
+    "protocol.clt.numberOfTasks": "1",
+    "protocol.clt.weight": "1",
+    "protocol.clt.CPI": "1",
+    "protocol.clt.T": "150",
+    "protocol.clt.I": "4e7",
+    "protocol.clt.taskArrivalRate": "0.6",
 
-        "protocol.props.B": "2",
-        "protocol.props.Beta1": "0.001",
-        "protocol.props.Beta2": "4",
-        "protocol.props.P_ti": "20",
+    "protocol.clt.numberOfDAG": "1",
+    "protocol.clt.dagWeights": "1",
+    "protocol.clt.edges": "",
+    "protocol.clt.maxDeadline": "100",
+    "protocol.clt.vertices": "1",
 
-    }
+    "protocol.props.B": "2",
+    "protocol.props.Beta1": "0.001",
+    "protocol.props.Beta2": "4",
+    "protocol.props.P_ti": "20",
+
+}
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
 
@@ -124,17 +130,18 @@ if __name__ == '__main__':
     all_epochs = []
     all_penalties = []
     try:
-        agent = DDQNAgent(input_shape=shape_obs_flat,
-                    output_shape=max_neighbours,
-                    action_space=env.action_space("worker_0"), # TODO: This is a hack... Fix this ffs
-                    batch_size=100,
-                    epsilon_start=0.70,
-                    epsilon_decay=0.0005,
-                    epsilon_end=0.01,
-                    gamma=0.55,
-                    update_interval=150,
-                    learning_rate=0.00001)
+        # agent = DDQNAgent(input_shape=shape_obs_flat,
+        #                   output_shape=max_neighbours,
+        #                   action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
+        #                   batch_size=100,
+        #                   epsilon_start=1.0,
+        #                   epsilon_decay=0.00005,
+        #                   epsilon_end=0.01,
+        #                   gamma=0.55,
+        #                   update_interval=150,
+        #                   learning_rate=0.00001)
 
+        # NN ==========================================================================
         # agent = A2CAgent(input_shape=shape_obs_flat,
         #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
         #                  output_shape=shape_a_flat,
@@ -142,7 +149,24 @@ if __name__ == '__main__':
         #                  gamma=0.55,
         #                  steps_for_return=150,
         #                  learning_rate=0.00001)
-        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
+        # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
+
+        # Baselines ===================================================================
+        # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
+        #                               output_shape=max_neighbours,
+        #                               action_space=env.action_space("worker_0"))
+        # rand.execute_simulation(env, num_episodes, print_instead=False)
+
+        lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
+                                 output_shape=max_neighbours,
+                                 action_space=env.action_space("worker_0"))
+        lq.execute_simulation(env, num_episodes, print_instead=False)
+
+        nothing = AlwaysLocal(input_shape=shape_obs_flat,
+                              output_shape=max_neighbours,
+                              action_space=env.action_space("worker_0"))
+        nothing.execute_simulation(env, num_episodes, print_instead=False)
+        env.close()
 
         print("Training finished.\n")
 
@@ -150,21 +174,6 @@ if __name__ == '__main__':
         print(traceback.format_exc())
         print("Training Failed. Miserably.")
         env.close()
-
-    # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
-    #                               output_shape=shape_a_flat,
-    #                               action_space=env.action_space)
-    # rand.execute_simulation(env, num_episodes, print_instead=False)
-
-    # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
-    #                                  output_shape = shape_a_flat,
-    #                                  action_space = env.action_space)
-    # lq.execute_simulation(env, num_episodes, print_instead=False)
-    #
-    # nothing = DoNothingControl(input_shape=shape_obs_flat,
-    #                               output_shape=shape_a_flat,
-    #                               action_space=env.action_space)
-    # nothing.execute_simulation(env, num_episodes, print_instead=False)
 
     # print_all_csv()
 

@@ -1,3 +1,6 @@
+import math
+import random
+
 import numpy as np
 
 from src.ControlAlgorithms.ControlAlgorithm import ControlAlgorithm
@@ -14,11 +17,16 @@ class RandomControlAlgorithm(ControlAlgorithm):
                  gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7):
         super().__init__(input_shape, action_space, output_shape, batch_size, epsilon_start, epsilon_decay, gamma,
                          epsilon_end, update_interval, learning_rate)
+        self.max_action = output_shape
 
     control_type = "Random"
 
-    def select_action(self, observation):
-        action = fl.flatten_action(self.action_space.sample())
+    def select_action(self, observation, agents):
+
+        action = {
+                    agent:  random.randint(a=0, b=len(observation[agent]['Q']) if len(observation[agent]['Q']) > 0 else 0)
+                    for agent in agents
+                }
         action_type = self.control_type
         return action, action_type
 

@@ -6,7 +6,7 @@
 # https://github.com/DanielPalaio/LunarLander-v2_DeepRL/blob/main/DQN/replay_buffer.py
 
 
-from src.Utils import utils as fl
+from src.Utils import utils as fl, utils
 import numpy as np
 import matplotlib.pyplot as plt
 from abc import abstractmethod
@@ -15,8 +15,7 @@ from abc import abstractmethod
 class ControlAlgorithm:
 
     def __init__(self, input_shape, action_space, output_shape, batch_size=500, epsilon_start=0.7, epsilon_decay=0.01,
-                 gamma=0.7,
-                 epsilon_end=0.01, update_interval=150, learning_rate=0.7):
+                 gamma=0.7,epsilon_end=0.01, update_interval=150, learning_rate=0.7, clip_rewards=False):
         # Parameters:
         self.batch_size = batch_size
         self.epsilon = epsilon_start
@@ -28,6 +27,7 @@ class ControlAlgorithm:
         self.action_space = action_space
         self.actions = output_shape  # There are 2 possible outputs.
         self.step = 0
+        self.clip_rewards = clip_rewards
 
     @property
     @abstractmethod
@@ -36,7 +36,7 @@ class ControlAlgorithm:
         pass
 
     @abstractmethod
-    def select_action(self, observation):
+    def select_action(self, observation, agents):
         pass  # In my specific case this would not be needed. But I will clean stuff up latter, for now i want to see it running properly
 
     def __plot(self, x, scores, avg_scores, per_episode, print_instead=False):
@@ -79,20 +79,24 @@ class ControlAlgorithm:
         this will effectively not train anything"""
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         for i in range(num_episodes):
-            done = False
+            done = [False for _ in env.agents]
             score = 0.0
             state, _ = env.reset()
+            agents = env.agents
             step = 0
-            while not done: # [5 7 1 1 1 1]
-                action, type = self.select_action(state)
+            while not utils.is_done(done): # [5 7 1 1 1 1]
+                target, type = self.select_action(state, agents)
+                action = utils.make_action(target, agents)
+
                 print("\nStep: " + str(step) + " => " + type + ":")
-                temp = env.step(fl.deflatten_action(np.floor(action)))
+                temp = env.step(action)
                 new_state, reward, done, _, _ = temp
-                if reward < -400:
+                for agent in agents:
+                    if reward[agent] < -400 and self.clip_rewards:
                     # Clip reward
-                    reward = -400
-                    print(f"We had an hit: {state}")
-                score += reward
+                        reward[agent] = -400
+                        print(f"We had an hit: {state}")
+                    score += reward[agent]
                 state = new_state
                 step += 1
             avg_episode.append(score / step)
@@ -104,4 +108,4 @@ class ControlAlgorithm:
                                                                              avg_score))
         self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
         self.__plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
-        env.close()
+

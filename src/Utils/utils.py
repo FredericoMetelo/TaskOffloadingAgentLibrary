@@ -77,10 +77,16 @@ def flatten_action_list(actions, agents):
 
 
 def is_done(bool_array):
-    # TODO this is what is broken
-    for agent, done in bool_array:
-        if not done:
-            return False
+    if type(bool_array) is list:
+        for done in bool_array:
+            if not done:
+                return False
+    elif type(bool_array) is dict:
+        for key in bool_array.keys():
+            if not bool_array[key]:
+                return False
+    else:
+        raise Exception("Unknown type for bool_array: {}".format(type(bool_array)))
     return True
 
 

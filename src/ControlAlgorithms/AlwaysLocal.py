@@ -5,7 +5,7 @@ from src.Utils import utils as fl
 import peersim_gym
 
 
-class DoNothingControl(ControlAlgorithm):
+class AlwaysLocal(ControlAlgorithm):
     """
     The RandomControlAlgorithm will offload data randomly. It will select both the node and the amount of data to be
     offloaded randomly.
@@ -17,10 +17,12 @@ class DoNothingControl(ControlAlgorithm):
 
     control_type = "DoNothing"
 
-    def select_action(self, observation):
-        Q = observation.get('Q')
-        action = np.argmin(Q)
-        action = np.array([action, 0])
+    def select_action(self, observation, agents):
+
+        action = {
+                    agent: 0
+                    for agent in agents
+                }
         action_type = self.control_type
         return action, action_type
 
