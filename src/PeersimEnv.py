@@ -52,7 +52,7 @@ def _make_ctr(ctrs_list):
 controllers = ["0"]  # , "5" only one for now...
 
 configs = {
-    "SIZE": "6",
+    "SIZE": "5",
     "CYCLE": "1",
     "CYCLES": "1000",
     "random.seed": "1234567890",
@@ -62,14 +62,14 @@ configs = {
     "CONTROLLERS": _make_ctr(controllers),
 
     "CLOUD_EXISTS": "1",
-    "NO_LAYERS": "2",
-    "NO_NODES_PER_LAYERS": "5,1",
-    "CLOUD_ACCESS": "0,1",
+    "NO_LAYERS": "1",
+    "NO_NODES_PER_LAYERS": "5",
+    "CLOUD_ACCESS": "0",
 
-    "FREQS": "1e7,3e7",
-    "NO_CORES": "4,8",
-    "Q_MAX": "10,50",
-    "VARIATIONS": "1e3,1e3",
+    "FREQS": "1e7",
+    "NO_CORES": "4",
+    "Q_MAX": "10",
+    "VARIATIONS": "0",
 
     "protocol.cld.no_vms": "3",
     "protocol.cld.VMProcessingPower": "1e8",
