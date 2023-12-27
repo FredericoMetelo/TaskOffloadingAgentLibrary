@@ -15,6 +15,7 @@ from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
 from src.Utils import utils as fl
+from src.Utils import ConfigHelper as ch
 import traceback
 
 
@@ -39,71 +40,16 @@ def print_all_csv(dir="./Plots/"):
     plt.show()
     return
 
+controllers = ["1"]  # , "5" only one for now...
 
-def _make_ctr(ctrs_list):
-    s = ""
-    for i in range(len(ctrs_list)):
-        s += ctrs_list[i]
-        if i < len(ctrs_list) - 1:
-            s += ";"
-    return s
+task_probs = [1]
+task_sizes = [150]
+task_instr = [4e7]
+task_CPI = [1]
 
-
-controllers = ["0"]  # , "5" only one for now...
-
-configs = {
-    "SIZE": "5",
-    "CYCLE": "1",
-    "CYCLES": "1000",
-    "random.seed": "1234567890",
-    "MINDELAY": "0",
-    "MAXDELAY": "0",
-    "DROP": "0",
-    "CONTROLLERS": _make_ctr(controllers),
-
-    "CLOUD_EXISTS": "1",
-    "NO_LAYERS": "1",
-    "NO_NODES_PER_LAYERS": "5",
-    "CLOUD_ACCESS": "0",
-
-    "FREQS": "1e7",
-    "NO_CORES": "4",
-    "Q_MAX": "10",
-    "VARIATIONS": "0",
-
-    "protocol.cld.no_vms": "3",
-    "protocol.cld.VMProcessingPower": "1e8",
-
-    "init.Net1.r": "500",
-
-    "protocol.mng.r_u": "1",
-    "protocol.mng.X_d": "1",
-    "protocol.mng.X_o": "150",
-    "protocol.mng.cycle": "5",
-
-    "protocol.clt.numberOfTasks": "1",
-    "protocol.clt.weight": "1",
-    "protocol.clt.CPI": "1",
-    "protocol.clt.T": "150",
-    "protocol.clt.I": "4e7",
-    "protocol.clt.taskArrivalRate": "0.6",
-
-    "protocol.clt.numberOfDAG": "1",
-    "protocol.clt.dagWeights": "1",
-    "protocol.clt.edges": "",
-    "protocol.clt.maxDeadline": "100",
-    "protocol.clt.vertices": "1",
-
-    "protocol.props.B": "2",
-    "protocol.props.Beta1": "0.001",
-    "protocol.props.Beta2": "4",
-    "protocol.props.P_ti": "20",
-
-}
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-
-    env = PeersimEnv(configs=configs, simtype="basic", log_dir='logs/')
+    config_dict = ch.generate_config_dict(expected_occupancy=1, controllers=controllers, task_probs=task_probs, task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI)
+    env = PeersimEnv(configs=config_dict, render_mode="ansi", simtype="basic", log_dir='logs/')
     env.reset()
 
     obs = env.observation_space("worker_0")
@@ -124,7 +70,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 100
+    num_episodes = 5
 
     # For plotting metrics
     all_epochs = []
@@ -152,10 +98,10 @@ if __name__ == '__main__':
         # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
 
         # Baselines ===================================================================
-        # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
-        #                               output_shape=max_neighbours,
-        #                               action_space=env.action_space("worker_0"))
-        # rand.execute_simulation(env, num_episodes, print_instead=False)
+        rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
+                                      output_shape=max_neighbours,
+                                      action_space=env.action_space("worker_0"))
+        rand.execute_simulation(env, num_episodes, print_instead=False)
 
         lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
                                  output_shape=max_neighbours,
