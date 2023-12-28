@@ -13,20 +13,26 @@ class RandomControlAlgorithm(ControlAlgorithm):
     The RandomControlAlgorithm will offload data randomly. It will select both the node and the amount of data to be
     offloaded randomly.
     """
-    def __init__(self, input_shape, action_space, output_shape, batch_size=500, epsilon_start=0.7, epsilon_decay=0.01,
-                 gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7):
-        super().__init__(input_shape, action_space, output_shape, batch_size, epsilon_start, epsilon_decay, gamma,
-                         epsilon_end, update_interval, learning_rate)
-        self.max_action = output_shape
 
-    control_type = "Random"
+    def __init__(self, action_space, output_shape, input_shape, agents, clip_rewards=False, collect_data=False):
+        super().__init__(action_space=action_space, output_shape=output_shape, input_shape=input_shape, agents=agents,
+                         clip_rewards=clip_rewards,
+                         collect_data=collect_data)
+        self.max_action = output_shape
+        self.control_type = "Random"
+
+    @property
+    def control_type(self):
+        return "Random"
+
+    @control_type.setter
+    def control_type(self, value):
+        self._control_type = value
 
     def select_action(self, observation, agents):
-
         action = {
-                    agent:  random.randint(a=0, b=len(observation[agent]['Q']) if len(observation[agent]['Q']) > 0 else 0)
-                    for agent in agents
-                }
+            agent: random.randint(a=0, b=len(observation[agent]['Q']) if len(observation[agent]['Q']) > 0 else 0)
+            for agent in agents
+        }
         action_type = self.control_type
         return action, action_type
-

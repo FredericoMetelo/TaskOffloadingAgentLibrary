@@ -38,7 +38,8 @@ def flatten_action(action):
 
     # y = gymnasium.spaces.utils.flatten_space(action)
     return y
-
+def flatten_actions(actions, agents):
+    return [flatten_action(actions[agent]) for agent in agents]
 
 def get_queue(observation):
     # Might need some restructuring if I ever change the shape of the environment. Particulary idf I start using the projection

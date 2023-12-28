@@ -11,17 +11,27 @@ class LeastQueueAlgorithm(ControlAlgorithm):
     The LEast queues offload control algorithm will select the node with the smallest queue and then split the load
     between the source node and the target node
     """
-    def __init__(self, input_shape, action_space, output_shape, batch_size=500, epsilon_start=0.7, epsilon_decay=0.01,
-                 gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7):
-        super().__init__(input_shape, action_space, output_shape, batch_size, epsilon_start, epsilon_decay, gamma,
-                         epsilon_end, update_interval, learning_rate)
-    control_type = "Least_Q"
+
+    def __init__(self, action_space, output_shape, input_shape, agents, clip_rewards=False, collect_data=False):
+        super().__init__(action_space=action_space, output_shape=output_shape, input_shape=input_shape, agents=agents, clip_rewards=clip_rewards,
+                         collect_data=collect_data)
+        self.control_type = "Least_Q"
+
+    @property
+    def control_type(self):
+        return "Least_Q"
+
+    @control_type.setter
+    def control_type(self, value):
+        self._control_type = value
 
     def select_action(self, observation, agents):
         action_type = self.control_type
         targets = {agent: np.argmin(observation[agent].get('Q')) for agent in agents}
 
         return targets, action_type
+
+
 
 # This code was for the case where the action was of the form (node_id, amount_to_offload)
 # if Q[id] <= Q[action]:

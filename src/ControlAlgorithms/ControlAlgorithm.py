@@ -12,24 +12,21 @@ import matplotlib.pyplot as plt
 from abc import abstractmethod
 from src.Utils.MetricHelper import MetricHelper as mh
 import peersim_gym.envs.PeersimEnv as pg
+from src.Utils.DatasetGen import SarsaDataCollector
 
 class ControlAlgorithm:
 
-    def __init__(self, input_shape, action_space, output_shape, batch_size=500, epsilon_start=0.7, epsilon_decay=0.01,
-                 gamma=0.7,epsilon_end=0.01, update_interval=150, learning_rate=0.7, clip_rewards=False):
+    def __init__(self, action_space, output_shape, input_shape, agents, clip_rewards=False, collect_data=False):
         # Parameters:
         self.mh = None
-        self.batch_size = batch_size
-        self.epsilon = epsilon_start
-        self.epsilon_decay = epsilon_decay
-        self.epsilon_end = epsilon_end
-        self.gamma = gamma
-        self.learning_rate = learning_rate
-        self.update_interval = update_interval
         self.action_space = action_space
+        self.input_shape = input_shape
         self.actions = output_shape  # There are 2 possible outputs.
         self.step = 0
         self.clip_rewards = clip_rewards
+        self.collect_data = collect_data
+        if self.collect_data:
+            self.data_collector = SarsaDataCollector(agents=agents)
 
     @property
     @abstractmethod
@@ -68,11 +65,16 @@ class ControlAlgorithm:
                                                 overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
                                                 average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
                                                 occupancy=info[pg.STATE_G_OCCUPANCY])
+                if self.collect_data:
+                    self.data_collector.add_data_point(i, step, state, action, reward, new_state)
                 step += 1
             self.mh.compile_aggregate_metrics(i, step)
-            print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
+            print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                              self.mh.episode_average_reward(i)))
         self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
         self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
         self.mh.clean_plt_resources()
+        if self.collect_data:
+            self.data_collector.save_to_csv('sarsa_data.csv')
         env.close()
+

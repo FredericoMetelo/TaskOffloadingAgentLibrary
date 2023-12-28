@@ -126,7 +126,18 @@ class DDQNAgent(Agent):
 
         env.close()
 
-    def get_action(self, observation):
+    def get_action(self, observation, pre_train_policy=False):
+        """
+        This function returns the action to take given the observation. If pre_train_policy is True, then we are
+        training the policy before the agent has any (TODO knowledge of the environment).
+         In this case, we just return a random action.
+        :param observation:
+        :param pre_train_policy:
+        :return:
+        """
+        if pre_train_policy:
+            return np.random.choice(self.actions)
+
         # In this case, we are using a epsilon-greedy policy
         if np.random.random() < self.epsilon:
             action = np.random.choice(self.actions)

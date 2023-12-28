@@ -49,3 +49,22 @@ class DQN(nn.Module):
         q_values = self.fc3(layer2)
 
         return q_values
+
+    def save_checkpoint(self, filename='dqn.pth.tar', path='./models', epoch=0):
+        # This saves the network parameters
+        print('... saving checkpoint ...')
+        T.save({
+            'epoch': epoch,
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'loss': self.loss
+        }, os.path.join(path, filename))
+
+    def load_checkpoint(self, filename='dqn.pth.tar', path='./models'):
+        # This loads the network parameters
+        print('... loading checkpoint ...')
+        checkpoint = T.load(os.path.join(path, filename))
+        self.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        self.loss = checkpoint['loss']

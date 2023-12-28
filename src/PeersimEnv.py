@@ -48,7 +48,7 @@ task_instr = [4e7]
 task_CPI = [1]
 
 if __name__ == '__main__':
-    config_dict = ch.generate_config_dict(expected_occupancy=1, controllers=controllers, task_probs=task_probs, task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI)
+    config_dict = ch.generate_config_dict(expected_occupancy=0.7, controllers=controllers, task_probs=task_probs, task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI)
     env = PeersimEnv(configs=config_dict, render_mode="ansi", simtype="basic", log_dir='logs/', randomize_seed=False)
     env.reset()
 
@@ -70,24 +70,25 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 2
+    num_episodes = 10
 
     # For plotting metrics
     all_epochs = []
     all_penalties = []
     try:
-        agent = DDQNAgent(input_shape=shape_obs_flat,
-                          output_shape=max_neighbours,
-                          action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
-                          batch_size=100,
-                          epsilon_start=1.0,
-                          epsilon_decay=0.00005,
-                          epsilon_end=0.01,
-                          gamma=0.55,
-                          update_interval=150,
-                          learning_rate=0.00001)
-
         # NN ==========================================================================
+        # agent = DDQNAgent(input_shape=shape_obs_flat,
+        #                   output_shape=max_neighbours,
+        #                   action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
+        #                   batch_size=100,
+        #                   epsilon_start=1.0,
+        #                   epsilon_decay=0.00005,
+        #                   epsilon_end=0.01,
+        #                   gamma=0.55,
+        #                   update_interval=150,
+        #                   learning_rate=0.00001)
+        # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
+
         # agent = A2CAgent(input_shape=shape_obs_flat,
         #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
         #                  output_shape=shape_a_flat,
@@ -95,7 +96,7 @@ if __name__ == '__main__':
         #                  gamma=0.55,
         #                  steps_for_return=150,
         #                  learning_rate=0.00001)
-        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
+        # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
 
         # Baselines ===================================================================
         # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
@@ -103,10 +104,13 @@ if __name__ == '__main__':
         #                               action_space=env.action_space("worker_0"))
         # rand.execute_simulation(env, num_episodes, print_instead=False)
 
-        # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
-        #                          output_shape=max_neighbours,
-        #                          action_space=env.action_space("worker_0"))
-        # lq.execute_simulation(env, num_episodes, print_instead=False)
+        lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
+                                 output_shape=max_neighbours,
+                                 action_space=env.action_space("worker_0"),
+                                 collect_data=True,
+                                 agents=env.possible_agents
+                                 )
+        lq.execute_simulation(env, num_episodes, print_instead=False)
 
         # nothing = AlwaysLocal(input_shape=shape_obs_flat,
         #                       output_shape=max_neighbours,
