@@ -10,7 +10,8 @@ from src.Agents.Networks.DQN import DQN
 from src.Utils import utils as utils
 from src.Agents.Agent import Agent
 import peersim_gym.envs.PeersimEnv as pe
-
+from src.Utils.MetricHelper import MetricHelper as mh
+import peersim_gym.envs.PeersimEnv as pg
 
 class DDQNAgent(Agent):
     """
@@ -45,6 +46,7 @@ class DDQNAgent(Agent):
         self.new_state_memory = np.zeros((self.memory_size, *self.input_shape), dtype=np.float32)
         self.terminal_memory = np.zeros(self.memory_size, dtype=np.bool)
         self.memory_counter = 0
+        self.control_type = "DDQN"
 
         # Networks - For some reaon couldn't use the original constructor on the laptop. This has taken too much time
         # so Im hacking it a little. Fix this later.
@@ -59,6 +61,7 @@ class DDQNAgent(Agent):
         self.last_losses = np.zeros(self.amount_of_metrics)
         self.last_rewards = np.zeros(self.amount_of_metrics)
 
+
     def train_loop(self, env, num_episodes, print_instead=True, controllers=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
@@ -67,13 +70,12 @@ class DDQNAgent(Agent):
         last_loss = None
         cumulative_reward = 0
         avg_reward = 0
-        total_steps = 0
-        episode_number = 0
+        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes)
+
         for i in range(num_episodes):
             # Prepare variables for the next run
             dones = [False for _ in controllers]
             agent_list = env.agents
-            total_reward_in_episode = 0
             step = 0
             score = 0.0
 
@@ -88,7 +90,7 @@ class DDQNAgent(Agent):
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
-                next_states, rewards, dones, _, _ = env.step(actions)
+                next_states, rewards, dones, _, info = env.step(actions)
                 next_states = utils.flatten_state_list(next_states, agent_list)
                 for idx, agent in enumerate(agent_list):
                     # Update history
@@ -96,32 +98,32 @@ class DDQNAgent(Agent):
                     score += rewards[agent]
                 # Advance to next iter
                 states = next_states
-                step += 1
-                total_steps += 1
-                # Update metrics
-                cumulative_reward += score
-                avg_reward = cumulative_reward / total_steps
 
+                # Update metrics
                 last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
                            s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
 
                 if step % steps_per_return == 0 or dones:
-                    # src for the update code https://github.com/dxyang/DQN_pytorch/blob/master/learn.py
-                    # Update target network
                     self.target_Q_value.load_state_dict(self.Q_value.state_dict())
-                    step += 1
-                self.get_stats(last_loss, score, avg_reward, cumulative_reward, total_steps, step, episode_number, env)
-            # Update final metrics
-            avg_episode.append(score / total_steps)
-            scores.append(score)
-            episodes.append(i)
-            avg_score = np.mean(scores[-100:])
-            avg_scores.append(avg_score)
-            episode_number += 1
 
-        self.plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
-                  print_instead=print_instead)
-        self.plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
+                # TODO This way of computing doesn't make sense for now. But with the distributed agents it will.
+                #  +1 point for how ugly this looks
+                self.mh.update_metrics_after_step(rewards=rewards,
+                                                  losses={agent: last_loss if not last_loss is None else 0 for agent in env.agents},
+                                                  overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
+                                                  average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
+                                                  occupancy=info[pg.STATE_G_OCCUPANCY])
+                self.get_stats(last_loss, score, avg_reward, cumulative_reward, step, step, i, env)
+                step += 1
+            self.mh.compile_aggregate_metrics(i, step)
+            print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
+                                                                                 self.mh.episode_average_reward(i)))
+
+        self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type,
+                                   print_instead=print_instead)
+        self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
+        self.mh.clean_plt_resources()
+
         env.close()
 
     def get_action(self, observation):
@@ -149,7 +151,7 @@ class DDQNAgent(Agent):
 
     def learn(self, s, a, r, s_next, k, fin):
         if self.memory_counter < self.memory_size:
-            return
+            return None
         # We need to zero the gradient optimizer in Pytorch first
         self.Q_value.optimizer.zero_grad()
 

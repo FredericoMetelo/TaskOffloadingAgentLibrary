@@ -6,6 +6,8 @@ from src.Agents.Agent import Agent
 from src.Agents.Networks.A2C import ActorCritic
 from src.Utils import utils
 
+from src.Utils.MetricHelper import MetricHelper as mh
+import peersim_gym.envs.PeersimEnv as pg
 
 class A2CAgent(Agent):
     """
@@ -38,13 +40,14 @@ class A2CAgent(Agent):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         steps_per_return = 5
+
+        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes)
         for i in range(num_episodes):
             # Prepare variables for the next run
             dones = [False for _ in controllers]
 
             total_reward = 0
             step = 0
-            total_steps = 0
             # Episode metrics
             score = 0.0
 
@@ -60,7 +63,7 @@ class A2CAgent(Agent):
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
-                next_states, rewards, dones, _, _ = env.step(actions)
+                next_states, rewards, dones, _, info = env.step(actions)
                 next_states = utils.flatten_state_list(states=next_states, agents=agent_list)
                 total_reward_in_step = self.__store_agent_step_data(states, actions, rewards, next_states, dones,
                                                                     agent_list)
@@ -68,24 +71,27 @@ class A2CAgent(Agent):
                 # Advance to next iter
                 states = next_states
                 step += 1
-                total_steps += 1
+
                 if step % steps_per_return == 0 or dones:
                     # Here we will learn the paths from all the agents
                     for agent in agent_list:
                         s, a, r, s_next, fin = self.__get_agent_step_data(agent)
                         if s and a and r and s_next and fin: # Check if fin is always not empty as well
                             self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin)
-                    step = 0
-            # Update final metrics
-            avg_episode.append(score / total_steps)
-            scores.append(score)
-            episodes.append(i)
-            avg_score = np.mean(scores[-100:])
-            avg_scores.append(avg_score)
 
-        self.plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode,
-                    print_instead=print_instead)
-        self.plot2(episodes, title=self.control_type, per_episode=avg_episode, print_instead=print_instead)
+                self.mh.update_metrics_after_step(rewards=rewards, losses={agent: 0 for agent in env.agents},
+                                                  overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
+                                                  average_response_time=info[
+                                                      pg.STATE_G_AVERAGE_COMPLETION_TIMES],
+                                                  occupancy=info[pg.STATE_G_OCCUPANCY])
+
+            # Update final metrics
+            self.mh.compile_aggregate_metrics(i, step)
+
+        self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type,
+                                   print_instead=print_instead)
+        self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
+        self.mh.clean_plt_resources()
 
     def learn(self, s, a, r, s_next, k, fin):
         self.A2C.remember_batch(states=s, actions=a, rewards=r, dones=fin)  # States should be ordered.

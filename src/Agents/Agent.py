@@ -33,38 +33,3 @@ class Agent(ABC):
 
 
 
-    def plot(self, x, scores, avg_scores, per_episode, print_instead=False):
-        # Setup for print
-        fig, ax = plt.subplots(ncols=3, nrows=1, sharex=True)  # Create 1x3 plot
-
-        # Print the metrics:
-        ax[0].set_title("Scores")
-        ax[0].plot(x, scores)
-
-        ax[1].set_title("Average Scores")
-        ax[1].plot(x, avg_scores)
-
-        ax[2].set_title("Average Score in Episode")
-        ax[2].plot(x, per_episode)
-
-        if print_instead:
-            plt.savefig(f"./Plots/plt_{self.control_type}")
-        else:
-            plt.show()
-        return
-
-    def plot2(self, x, per_episode, title=None, print_instead=False, csv_dump=True):
-        plt.plot(x, per_episode)
-        plt.ylabel('Average Score')
-        if not (title is None):
-            plt.title(title)
-        if print_instead:
-            plt.savefig(f"./Plots/plt_{self.control_type}")
-        else:
-            plt.show()
-
-        if csv_dump:
-            with open(f"./Plots/{self.control_type}.csv", 'ab') as f:
-                data = np.column_stack((x, per_episode))
-                np.savetxt(f, data, delimiter=',', header='x,per_episode', comments='')
-

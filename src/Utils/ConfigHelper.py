@@ -125,8 +125,12 @@ def generate_config_dict(controllers="[0]",
 
                          weight_utility=10,
                          weight_delay=1,
-                         weight_overload=150
-                         ):
+                         weight_overload=150,
+                         RANDOMIZETOPOLOGY=True,
+                         RANDOMIZEPOSITIONS=True,
+                         POSITIONS="18.55895350495783,17.02475796027715;47.56499372388999,57.28732691557995;5.366872150976409,43.28729893321355;17.488160666668694,29.422819514162434;81.56549175388358,53.14564532018814;85.15660881172089,74.47408014762478;18.438454887921974,44.310130148722195;72.04311826903107,62.06952644109185;25.60125368295145,15.54795598202745;17.543669122835837,70.7258178169151",
+                         TOPOLOGY="0,1,2,3,6,8;1,0,2,3,4,5,6,7,8,9;2,0,1,3,6,8,9;3,0,1,2,6,8,9;4,1,5,7;5,1,4,7;6,0,1,2,3,8,9;7,1,4,5;8,0,1,2,3,6;9,1,2,3,6"
+                        ):
     if size != sum(nodes_per_layer):
         raise Exception("Size and sum of nodes per layer must be equal")
     # Press the green button in the gutter to run the script.
@@ -181,6 +185,12 @@ def generate_config_dict(controllers="[0]",
         "protocol.props.Beta1": str(comm_Beta1),
         "protocol.props.Beta2": str(comm_Beta2),
         "protocol.props.P_ti": str(comm_Power),
+        "RANDOMIZEPOSITIONS": str(RANDOMIZEPOSITIONS),
+        "init.Net0.POSITIONS": POSITIONS,
+
+        "RANDOMIZETOPOLOGY": str(RANDOMIZETOPOLOGY),
+        "init.Net1.TOPOLOGY": TOPOLOGY,
+
 
     }
     return configs
