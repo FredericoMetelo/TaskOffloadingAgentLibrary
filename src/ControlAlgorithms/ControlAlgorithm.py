@@ -16,7 +16,8 @@ from src.Utils.DatasetGen import SarsaDataCollector
 
 class ControlAlgorithm:
 
-    def __init__(self, action_space, output_shape, input_shape, agents, clip_rewards=False, collect_data=False):
+    def __init__(self, action_space, output_shape, input_shape, agents, clip_rewards=False, collect_data=False,
+                 plot_name=None, file_name=None):
         # Parameters:
         self.mh = None
         self.action_space = action_space
@@ -25,6 +26,8 @@ class ControlAlgorithm:
         self.step = 0
         self.clip_rewards = clip_rewards
         self.collect_data = collect_data
+        self.file_name = file_name
+        self.plot_name = plot_name
         if self.collect_data:
             self.data_collector = SarsaDataCollector(agents=agents)
 
@@ -66,15 +69,16 @@ class ControlAlgorithm:
                                                 average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
                                                 occupancy=info[pg.STATE_G_OCCUPANCY])
                 if self.collect_data:
-                    self.data_collector.add_data_point(i, step, state, action, reward, new_state)
+                    self.data_collector.add_data_point(i, step, state, action, reward, new_state, done)
                 step += 1
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                              self.mh.episode_average_reward(i)))
-        self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
-        self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
+        self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type + self.plot_name, print_instead=print_instead)
+        self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type + self.plot_name, print_instead=print_instead)
         self.mh.clean_plt_resources()
         if self.collect_data:
-            self.data_collector.save_to_csv('sarsa_data.csv')
+            print("Saving Data to CSV" + self.file_name + '.csv')
+            self.data_collector.save_to_csv(self.file_name + '.csv')
         env.close()
 

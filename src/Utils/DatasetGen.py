@@ -9,7 +9,7 @@ class SarsaDataCollector:
         # TODO: When I have  multiple agents maybe pivoting to a dict with an entry per agent would be better
         self.data = []
         self.agents = agents
-    def add_data_point(self, episode, step, state, action, reward, next_state):
+    def add_data_point(self, episode, step, state, action, reward, next_state, done):
         for agent in self.agents:
             if agent not in state.keys():
                 continue
@@ -21,14 +21,15 @@ class SarsaDataCollector:
                 'state': fl.flatten_observation(state[agent]),
                 'action': fl.flatten_action(action[agent]),
                 'reward': float(reward[agent]),
-                'next_state': fl.flatten_observation(next_state[agent])
+                'next_state': fl.flatten_observation(next_state[agent]),
+                'done': done[agent]
             }
             self.data.append(data_point)
 
     def save_to_csv(self, filename):
         with open(filename, 'w', newline='') as csvfile:
-            fieldnames = ['agent', 'episode', 'step', 'state', 'action', 'reward', 'next_state']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            fieldnames = ['agent', 'episode', 'step', 'state', 'action', 'reward', 'next_state', 'done']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames, lineterminator='\n')
 
             writer.writeheader()
             for data_point in self.data:
@@ -40,12 +41,33 @@ class SarsaDataCollector:
             reader = csv.DictReader(csvfile)
             for row in reader:
                 row['agent'] = row['agent'] # Easily convertible to the different agents
-                row['state'] = np.array(eval(row['state']))
-                row['action'] = np.array(eval(row['action']))
-                row['next_state'] = np.array(eval(row['next_state']))
+                row['state'] = self.brute_force_convert(row['state'])
+                row['action'] = self.brute_force_convert(row['action'])
+                row['next_state'] = self.brute_force_convert(row['next_state'])
                 row['reward'] = float(row['reward'])
+                row['done'] = row['done'] == 'True'
                 self.data.append(row)
-
+        return self.data
+    def load_from_csv_to_arrays(self, filename):
+        states  = []
+        actions = []
+        rewards = []
+        next_states = []
+        dones = []
+        with open(filename, 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                states.append(row['agent'])  # Easily convertible to the different agents)
+                actions.append(self.brute_force_convert(row['state']))
+                rewards.append(self.brute_force_convert(row['action']))
+                next_states.append(self.brute_force_convert(row['next_state']))
+                dones.append(float(row['reward']))
+                self.data.append(row)
+        return states, actions, rewards, next_states, dones
+    def brute_force_convert(self, string_data):
+        values = string_data.replace("[", "").replace("]", "").replace("\n", "").split()
+        numpy_array = np.array([float(value) for value in values])
+        return numpy_array
 # Example usage:
 # collector = SarsaDataCollector()
 # collector.add_data_point(1, 1, np.array([1, 2, 3]), np.array([0.1, 0.9]), 0.5, np.array([4, 5, 6]))

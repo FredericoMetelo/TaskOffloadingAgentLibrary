@@ -48,8 +48,8 @@ task_instr = [4e7]
 task_CPI = [1]
 
 if __name__ == '__main__':
-    config_dict = ch.generate_config_dict(expected_occupancy=0.7, controllers=controllers, task_probs=task_probs, task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI)
-    env = PeersimEnv(configs=config_dict, render_mode="ansi", simtype="basic", log_dir='logs/', randomize_seed=False)
+    config_dict = ch.generate_config_dict(expected_occupancy=0.8, controllers=controllers, task_probs=task_probs, task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI, RANDOMIZEPOSITIONS=False, RANDOMIZETOPOLOGY=False)
+    env = PeersimEnv(configs=config_dict, render_mode="ansi", simtype="basic", log_dir='logs/', randomize_seed=True)
     env.reset()
 
     obs = env.observation_space("worker_0")
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 10
+    num_episodes = 1000
 
     # For plotting metrics
     all_epochs = []
@@ -111,7 +111,10 @@ if __name__ == '__main__':
                                  agents=env.possible_agents
                                  )
         lq.execute_simulation(env, num_episodes, print_instead=False)
-
+        # TEST:
+        from src.Utils.DatasetGen import SarsaDataCollector
+        sc = SarsaDataCollector(agents=env.possible_agents)
+        data = sc.load_from_csv_to_arrays("sarsa_data.csv")
         # nothing = AlwaysLocal(input_shape=shape_obs_flat,
         #                       output_shape=max_neighbours,
         #                       action_space=env.action_space("worker_0"))
