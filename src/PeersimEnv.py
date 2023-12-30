@@ -18,6 +18,7 @@ from src.Utils import utils as fl
 from src.Utils import ConfigHelper as ch
 import traceback
 
+import torch as T
 
 def print_all_csv(dir="./Plots/"):
     # Help from ChatGPT
@@ -76,6 +77,7 @@ if __name__ == '__main__':
     all_epochs = []
     all_penalties = []
     try:
+        # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
         # NN ==========================================================================
         agent = DDQNAgent(input_shape=shape_obs_flat,
                           output_shape=max_neighbours,
@@ -87,7 +89,7 @@ if __name__ == '__main__':
                           gamma=0.55,
                           update_interval=150,
                           learning_rate=0.00001)
-        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file="Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv")
+        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file="Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv", load_weights="./models/warm_up_Q_value.pth.tar")
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
         #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs

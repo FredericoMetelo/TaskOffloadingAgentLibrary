@@ -177,10 +177,10 @@ class DDQNAgent(Agent):
         # We need to zero the gradient optimizer in Pytorch first
         self.Q_value.optimizer.zero_grad()
 
-        max_mem = min(self.memory_counter,
-                      self.memory_size)  # Select a sub-set of the memory by picking batch_size random indexes between 0 and max_mem
-        batch = np.random.choice(max_mem, self.batch_size, replace=False)
+        # Select a sub-set of the memory by picking batch_size random indexes between 0 and max_mem
+        max_mem = min(self.memory_counter, self.memory_size)
         # Turns out we need the batch indexes for proper array slicing...
+        batch = np.random.choice(max_mem, self.batch_size, replace=False)
         batch_index = np.arange(self.batch_size, dtype=np.int32)
 
         state_batch = T.tensor(s[batch]).to(self.Q_value.device)
@@ -191,10 +191,10 @@ class DDQNAgent(Agent):
         action_batch = a[batch]
         # This does not need to be a tensor, we use this to get the target Q value for the aciton we took.
 
-        q_value = self.Q_value.forward(state_batch)[
-            batch_index, action_batch]  # This is the Q value for the action we took
+        q_value = self.Q_value.forward(state_batch)[batch_index, action_batch.squeeze()]  # Q value for the action we took
+
         q_next_state = self.target_Q_value.forward(next_state_batch)  # This is the Q value for the next state
-        q_next_state[terminal_batch] = 0.0  # If we are in a terminal state, the Q value is 0, we only ocunt the rewards
+        q_next_state[terminal_batch] = 0.0  # If we are in a terminal state, the Q value is 0, we only count the rewards
 
         q_value_target = reward_batch + self.gamma * T.max(q_next_state, dim=1)[0]
         # [0] here is because the torch.max() returns a tuple (values, indexes)
@@ -228,13 +228,18 @@ class DDQNAgent(Agent):
         """
         data = self.dg.load_from_csv_to_arrays(dataset_file)
         states, actions, rewards, next_states, dones = data
-        no_batches = 1 # len(states) // self.batch_size
+        no_batches = len(states) // self.batch_size
         for i in range(no_batches):  # len(states)):
+            loss = 0
+            print("Beginning warm up batch {}".format(i))
+            first_idx = min(i * self.batch_size, len(states) - self.batch_size)
+            print(" Covering from: {}".format(first_idx) + "  to {}".format(first_idx + self.batch_size))
             for j in range(self.batch_size):
-                self.__store_transition(states[j], actions[j], rewards[j], next_states[j], dones[j])
-            self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
+                self.__store_transition(states[first_idx + j], actions[first_idx + j], rewards[first_idx + j], next_states[first_idx + j], dones[first_idx + j])
+                l = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
                        s_next=self.new_state_memory, k=i, fin=self.terminal_memory)
-            if i % self.update_interval == 0:
-                self.target_Q_value.load_state_dict(self.Q_value.state_dict())
+                loss += l if not l is None else 0 # for the first time steps where no training is done
+            print(f"Loss Total: {loss}  Loss Avg: {loss/self.batch_size}  ") # (This is kinda irrelevant btw)
+            self.target_Q_value.load_state_dict(self.Q_value.state_dict())
         self.Q_value.save_checkpoint(filename="warm_up_Q_value.pth.tar", epoch=-1)
         print("Warm up complete")
