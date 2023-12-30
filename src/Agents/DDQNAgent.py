@@ -11,7 +11,9 @@ from src.Utils import utils as utils
 from src.Agents.Agent import Agent
 import peersim_gym.envs.PeersimEnv as pe
 from src.Utils.MetricHelper import MetricHelper as mh
+from src.Utils.DatasetGen import SarsaDataCollector as dg
 import peersim_gym.envs.PeersimEnv as pg
+
 
 class DDQNAgent(Agent):
     """
@@ -27,7 +29,8 @@ class DDQNAgent(Agent):
     """
 
     def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=500, epsilon_start=0.7,
-                 epsilon_decay=5e-4, gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7, control_type="DQN"):
+                 epsilon_decay=5e-4, gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7,
+                 control_type="DQN"):
         super().__init__(input_shape, action_space, output_shape, memory_max_size)
         # Parameters:
         self.epsilon = epsilon_start
@@ -53,7 +56,7 @@ class DDQNAgent(Agent):
         self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
                            n_actions=self.action_shape)
         self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
-                           n_actions=self.action_shape)
+                                  n_actions=self.action_shape)
         summary(self.Q_value, input_size=self.input_shape)
         summary(self.target_Q_value, input_size=self.input_shape)
 
@@ -61,8 +64,7 @@ class DDQNAgent(Agent):
         self.last_losses = np.zeros(self.amount_of_metrics)
         self.last_rewards = np.zeros(self.amount_of_metrics)
 
-
-    def train_loop(self, env, num_episodes, print_instead=True, controllers=None):
+    def train_loop(self, env, num_episodes, print_instead=True, controllers=None, warm_up_file=None, load_weights=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         steps_per_return = 5
@@ -71,6 +73,13 @@ class DDQNAgent(Agent):
         cumulative_reward = 0
         avg_reward = 0
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes)
+        self.dg = dg(agents=env.possible_agents)
+        if warm_up_file is not None:
+            self.warm_up(warm_up_file, env.possible_agents)
+
+        if load_weights is not None:
+            self.Q_value.load_checkpoint(load_weights)
+            self.target_Q_value.load_checkpoint(load_weights)
 
         for i in range(num_episodes):
             # Prepare variables for the next run
@@ -94,14 +103,15 @@ class DDQNAgent(Agent):
                 next_states = utils.flatten_state_list(next_states, agent_list)
                 for idx, agent in enumerate(agent_list):
                     # Update history
-                    self.__store_transition(states[idx], actions[agent]['neighbourIndex'], rewards[agent], next_states[idx], dones[agent])
+                    self.__store_transition(states[idx], actions[agent]['neighbourIndex'], rewards[agent],
+                                            next_states[idx], dones[agent])
                     score += rewards[agent]
                 # Advance to next iter
                 states = next_states
 
                 # Update metrics
                 last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
-                           s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
+                                       s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
 
                 if step % steps_per_return == 0 or dones:
                     self.target_Q_value.load_state_dict(self.Q_value.state_dict())
@@ -109,7 +119,8 @@ class DDQNAgent(Agent):
                 # TODO This way of computing doesn't make sense for now. But with the distributed agents it will.
                 #  +1 point for how ugly this looks
                 self.mh.update_metrics_after_step(rewards=rewards,
-                                                  losses={agent: last_loss if not last_loss is None else 0 for agent in env.agents},
+                                                  losses={agent: last_loss if not last_loss is None else 0 for agent in
+                                                          env.agents},
                                                   overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
                                                   average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
                                                   occupancy=info[pg.STATE_G_OCCUPANCY])
@@ -117,7 +128,7 @@ class DDQNAgent(Agent):
                 step += 1
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
-                                                                                 self.mh.episode_average_reward(i)))
+                                                                             self.mh.episode_average_reward(i)))
 
         self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type,
                                    print_instead=print_instead)
@@ -203,8 +214,27 @@ class DDQNAgent(Agent):
         print(f'Last loss: {last_loss}')
         print(f'Last reward: {last_reward}')
         print(f'Last Reward Components: {env.last_reward_components}')
-        print(f'Average loss (from last 50 steps): {sum(self.last_losses)/len(self.last_losses)}')
-        print(f'Average reward (from last 50 steps): {sum(self.last_rewards)/len(self.last_rewards)}')
+        print(f'Average loss (from last 50 steps): {sum(self.last_losses) / len(self.last_losses)}')
+        print(f'Average reward (from last 50 steps): {sum(self.last_rewards) / len(self.last_rewards)}')
         print(f'Cumulative reward: {cumulative_reward}')
         print(f'Current epsilon: {self.epsilon}')
         print(f'Total steps: {total_steps}')
+
+    def warm_up(self, dataset_file, agents):
+        """
+        This function is used to warm up the agent. This is done by loading a dataset and running the agent on it.
+        :param dataset_file: The file containing the dataset.
+        :return:
+        """
+        data = self.dg.load_from_csv_to_arrays(dataset_file)
+        states, actions, rewards, next_states, dones = data
+        no_batches = 1 # len(states) // self.batch_size
+        for i in range(no_batches):  # len(states)):
+            for j in range(self.batch_size):
+                self.__store_transition(states[j], actions[j], rewards[j], next_states[j], dones[j])
+            self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
+                       s_next=self.new_state_memory, k=i, fin=self.terminal_memory)
+            if i % self.update_interval == 0:
+                self.target_Q_value.load_state_dict(self.Q_value.state_dict())
+        self.Q_value.save_checkpoint(filename="warm_up_Q_value.pth.tar", epoch=-1)
+        print("Warm up complete")

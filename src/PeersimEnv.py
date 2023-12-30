@@ -77,17 +77,17 @@ if __name__ == '__main__':
     all_penalties = []
     try:
         # NN ==========================================================================
-        # agent = DDQNAgent(input_shape=shape_obs_flat,
-        #                   output_shape=max_neighbours,
-        #                   action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
-        #                   batch_size=100,
-        #                   epsilon_start=1.0,
-        #                   epsilon_decay=0.00005,
-        #                   epsilon_end=0.01,
-        #                   gamma=0.55,
-        #                   update_interval=150,
-        #                   learning_rate=0.00001)
-        # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
+        agent = DDQNAgent(input_shape=shape_obs_flat,
+                          output_shape=max_neighbours,
+                          action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
+                          batch_size=100,
+                          epsilon_start=1.0,
+                          epsilon_decay=0.00005,
+                          epsilon_end=0.01,
+                          gamma=0.55,
+                          update_interval=150,
+                          learning_rate=0.00001)
+        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file="Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv")
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
         #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
@@ -104,17 +104,14 @@ if __name__ == '__main__':
         #                               action_space=env.action_space("worker_0"))
         # rand.execute_simulation(env, num_episodes, print_instead=False)
 
-        lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
-                                 output_shape=max_neighbours,
-                                 action_space=env.action_space("worker_0"),
-                                 collect_data=True,
-                                 agents=env.possible_agents
-                                 )
-        lq.execute_simulation(env, num_episodes, print_instead=False)
+        # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
+        #                          output_shape=max_neighbours,
+        #                          action_space=env.action_space("worker_0"),
+        #                          collect_data=True,
+        #                          agents=env.possible_agents
+        #                          )
+        # lq.execute_simulation(env, num_episodes, print_instead=False)
         # TEST:
-        from src.Utils.DatasetGen import SarsaDataCollector
-        sc = SarsaDataCollector(agents=env.possible_agents)
-        data = sc.load_from_csv_to_arrays("sarsa_data.csv")
         # nothing = AlwaysLocal(input_shape=shape_obs_flat,
         #                       output_shape=max_neighbours,
         #                       action_space=env.action_space("worker_0"))

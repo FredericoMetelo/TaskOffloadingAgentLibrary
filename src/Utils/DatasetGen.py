@@ -54,14 +54,18 @@ class SarsaDataCollector:
         rewards = []
         next_states = []
         dones = []
+        episodes = []
+        steps = []
         with open(filename, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                states.append(row['agent'])  # Easily convertible to the different agents)
-                actions.append(self.brute_force_convert(row['state']))
-                rewards.append(self.brute_force_convert(row['action']))
+                states.append(row['state'])  # Easily convertible to the different agents)
+                episodes.append(row['episode'])
+                steps.append(row['step'])
+                actions.append(self.brute_force_convert(row['action']))
+                rewards.append(self.brute_force_convert(row['reward']))
                 next_states.append(self.brute_force_convert(row['next_state']))
-                dones.append(float(row['reward']))
+                dones.append(row['done'] == 'True')
                 self.data.append(row)
         return states, actions, rewards, next_states, dones
     def brute_force_convert(self, string_data):

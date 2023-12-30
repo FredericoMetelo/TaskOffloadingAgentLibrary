@@ -194,3 +194,5 @@ class DQN:
                 f += 1
         self.__plot(episodes, scores=scores, avg_scores=avg_scores, per_episode=avg_episode, print_instead=print_instead)
         env.close()
+
+

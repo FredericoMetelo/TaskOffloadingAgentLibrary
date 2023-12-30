@@ -1,2 +1,6 @@
 logs/*
 */*/__pycache__
+Datasets/*.zip
+Datasets/*/*.zip
+Datasets/*.csv
+Datasets/*/*.csv
