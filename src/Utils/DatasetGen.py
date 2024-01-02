@@ -59,9 +59,10 @@ class SarsaDataCollector:
         with open(filename, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                states.append(row['state'])  # Easily convertible to the different agents)
+
                 episodes.append(row['episode'])
                 steps.append(row['step'])
+                states.append(self.brute_force_convert(row['state']))  # Easily convertible to the different agents)
                 actions.append(self.brute_force_convert(row['action']))
                 rewards.append(self.brute_force_convert(row['reward']))
                 next_states.append(self.brute_force_convert(row['next_state']))

@@ -37,7 +37,7 @@ class DQN(nn.Module):
         self.loss = nn.MSELoss()
         # GPU support, in torch we need to specify where we are sending the Network.
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
-
+        # self.device = "cpu"  # Debugging purposes
         self.to(self.device)
 
     def forward(self, state):
@@ -60,10 +60,10 @@ class DQN(nn.Module):
             'loss': self.loss
         }, os.path.join(path, filename))
 
-    def load_checkpoint(self, filename='dqn.pth.tar', path='./models'):
+    def load_checkpoint(self, filename='./models/dqn.pth.tar'):
         # This loads the network parameters
         print('... loading checkpoint ...')
-        checkpoint = T.load(os.path.join(path, filename))
+        checkpoint = T.load(filename)
         self.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']

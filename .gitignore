@@ -1,5 +1,6 @@
 logs/*
-*/*/__pycache__
+**/.idea
+**/__pycache__
 Datasets/*.zip
 Datasets/*/*.zip
 Datasets/*.tar.gz
