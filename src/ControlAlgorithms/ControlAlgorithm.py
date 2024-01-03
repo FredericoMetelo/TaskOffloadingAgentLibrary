@@ -61,6 +61,9 @@ class ControlAlgorithm:
                 print("\nStep: " + str(step) + " => " + type + ":")
                 temp = env.step(action)
                 new_state, reward, done, _, info = temp
+
+                print("Reward: " + str(reward) + " Done: " + str(done))
+
                 for agent in agents:
                     score += reward[agent]
                 state = new_state
