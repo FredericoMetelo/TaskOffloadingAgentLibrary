@@ -29,7 +29,9 @@ class DQN(nn.Module):
         # *self.input_dims is a way to unpack a list or tuple. It is equivalent to:
         # Network
         self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
+        self.bn1 = nn.BatchNorm1d(self.fc1_dims)
         self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
+        self.bn2 = nn.BatchNorm1d(self.fc2_dims)
         self.fc3 = nn.Linear(self.fc2_dims, self.n_actions)
 
         self.optimizer = optim.Adam(self.parameters(), lr=lr)
@@ -44,8 +46,8 @@ class DQN(nn.Module):
         # This is the forward pass of the network, it is called when we call the network with an input
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
-        layer1 = F.relu(self.fc1(state))
-        layer2 = F.relu(self.fc2(layer1))
+        layer1 = F.relu(self.bn1(self.fc1(state)))
+        layer2 = F.relu(self.bn2(self.fc2(layer1)))
         q_values = self.fc3(layer2)
 
         return q_values

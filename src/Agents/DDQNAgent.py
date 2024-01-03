@@ -113,6 +113,8 @@ class DDQNAgent(Agent):
                 last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
                                        s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
 
+                print(f'Action(e:{self.epsilon}) {actions}  -   Loss: {last_loss}  -    Rewards: {rewards}')
+
                 if step % steps_per_return == 0 or dones:
                     self.target_Q_value.load_state_dict(self.Q_value.state_dict())
 
@@ -124,7 +126,7 @@ class DDQNAgent(Agent):
                                                   overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
                                                   average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
                                                   occupancy=info[pg.STATE_G_OCCUPANCY])
-                self.get_stats(last_loss, score, avg_reward, cumulative_reward, step, step, i, env)
+                # self.get_stats(last_loss, score, avg_reward, cumulative_reward, step, step, i, env)
                 step += 1
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
@@ -151,8 +153,10 @@ class DDQNAgent(Agent):
 
         # In this case, we are using a epsilon-greedy policy
         if np.random.random() < self.epsilon:
+            print("Exploring")
             action = np.random.choice(self.actions)
         else:
+            print("Exploiting")
             # We want to use the target network to get the action, network is in the device. So we send the observation
             # there as well.
             state = T.tensor(np.array([observation]), dtype=T.float32).to(self.Q_value.device)

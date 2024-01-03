@@ -89,14 +89,14 @@ if __name__ == '__main__':
                           gamma=0.99,
                           update_interval=150,
                           learning_rate=0.001)
-        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file="Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv", load_weights="./models/warm_up_Q_value.pth.tar")
+        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file="Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv", load_weights="./models/warm_up_Q_value.pth.tar")  # None
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
         #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
         #                  output_shape=shape_a_flat,
         #                  agents=env.possible_agents,
         #                  gamma=0.55,
-        #                  steps_for_return=150,
+        #                  steps_for        _return=150,
         #                  learning_rate=0.00001)
         # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
 
