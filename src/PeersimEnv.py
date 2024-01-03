@@ -84,11 +84,11 @@ if __name__ == '__main__':
                           action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
                           batch_size=100,
                           epsilon_start=1.0,
-                          epsilon_decay=0.00005,
-                          epsilon_end=0.01,
-                          gamma=0.55,
+                          epsilon_decay= (1.0 - 0.1 )/(num_episodes * 1000),  # Start 1.0, go down to 0.1 at the end
+                          epsilon_end=0.1,
+                          gamma=0.99,
                           update_interval=150,
-                          learning_rate=0.00001)
+                          learning_rate=0.001)
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file="Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv", load_weights="./models/warm_up_Q_value.pth.tar")
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
