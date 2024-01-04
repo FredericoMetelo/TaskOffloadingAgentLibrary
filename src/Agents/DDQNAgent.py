@@ -55,7 +55,7 @@ class DDQNAgent(Agent):
 
         # Networks - For some reaon couldn't use the original constructor on the laptop. This has taken too much time
         # so Im hacking it a little. Fix this later.
-        self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
+        self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256, fc3_dims=128,
                            n_actions=self.action_shape)
         self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256, fc3_dims=128,
                                   n_actions=self.action_shape)

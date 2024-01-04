@@ -24,6 +24,7 @@ class DQN(nn.Module):
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
+        self.fc3_dims = fc3_dims
         self.n_actions = n_actions
 
         # *self.input_dims is a way to unpack a list or tuple. It is equivalent to:
