@@ -66,12 +66,7 @@ class DDQNAgent(Agent):
 
     def train_loop(self, env, num_episodes, print_instead=True, controllers=None, warm_up_file=None, load_weights=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
-        scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
-        steps_per_return = 5
 
-        last_loss = None
-        cumulative_reward = 0
-        avg_reward = 0
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes)
         self.dg = dg(agents=env.possible_agents)
         if warm_up_file is not None:
@@ -95,7 +90,7 @@ class DDQNAgent(Agent):
             while not utils.is_done(dones):
                 print(f'Step: {step}\n')
                 # Interaction Step:
-                targets = {agent: np.floor(self.get_action(np.array([states[idx]]))) for idx, agent in
+                targets = {agent: np.floor(self.get_action(states[idx])) for idx, agent in
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
@@ -115,7 +110,7 @@ class DDQNAgent(Agent):
 
                 print(f'Action(e:{self.epsilon}) {actions}  -   Loss: {last_loss}  -    Rewards: {rewards}')
 
-                if step % steps_per_return == 0 or dones:
+                if step % self.update_interval == 0 or dones:
                     self.target_Q_value.load_state_dict(self.Q_value.state_dict())
 
                 # TODO This way of computing doesn't make sense for now. But with the distributed agents it will.
@@ -159,6 +154,7 @@ class DDQNAgent(Agent):
             print("Exploiting")
             # We want to use the target network to get the action, network is in the device. So we send the observation
             # there as well.
+
             state = T.tensor(np.array([observation]), dtype=T.float32).to(self.Q_value.device)
             actions = self.Q_value.forward(state)
             # We get the index of the highest Q value. This is returned in a tensor, we use item() to convertit to
