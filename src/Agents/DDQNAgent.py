@@ -26,6 +26,8 @@ class DDQNAgent(Agent):
     2. actions is the Gymnasium action space, this is used to sample actions for the epsilon-gereeedy policy.
 
     This Class is based on the implementation by "Machine Learning Phil" in https://www.youtube.com/watch?v=wc-FxNENg9U
+    and the PyTorch tutorial on DQN https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+
     """
 
     def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=500, epsilon_start=0.7,
@@ -53,9 +55,9 @@ class DDQNAgent(Agent):
 
         # Networks - For some reaon couldn't use the original constructor on the laptop. This has taken too much time
         # so Im hacking it a little. Fix this later.
-        self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
+        self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256, fc3_dims=128,
                            n_actions=self.action_shape)
-        self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
+        self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256, fc3_dims=128,
                                   n_actions=self.action_shape)
         summary(self.Q_value, input_size=self.input_shape)
         summary(self.target_Q_value, input_size=self.input_shape)
@@ -104,7 +106,7 @@ class DDQNAgent(Agent):
                 # Advance to next iter
                 states = next_states
 
-                # Update metrics
+                # Learn
                 last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
                                        s_next=self.new_state_memory, k=step, fin=self.terminal_memory)
 
@@ -139,6 +141,16 @@ class DDQNAgent(Agent):
         This function returns the action to take given the observation. If pre_train_policy is True, then we are
         training the policy before the agent has any (TODO knowledge of the environment).
          In this case, we just return a random action.
+
+         Note: Due  to using BatchNorm we must use for prediction
+         self.Q_value_forward().eval()
+         with torch.no_grad():
+            ...
+
+        self.Q_value_forward().train()
+
+
+        src: https://discuss.pytorch.org/t/how-to-make-predictions-with-a-model-that-uses-batchnorm1d/100187
         :param observation:
         :param pre_train_policy:
         :return:
@@ -152,11 +164,19 @@ class DDQNAgent(Agent):
             action = np.random.choice(self.actions)
         else:
             print("Exploiting")
-            # We want to use the target network to get the action, network is in the device. So we send the observation
-            # there as well.
+            #  We need to set the network to evaluation mode, because we are only predicting the action for one state,
+            #  and batchnorm layers.
+            #
+            # See
+            # https://discuss.pytorch.org/t/how-to-make-predictions-with-a-model-that-uses-batchnorm1d/100187
+            # https://stackoverflow.com/questions/58447885/pytorch-going-back-and-forth-between-eval-and-train-modes
+            # https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 
-            state = T.tensor(np.array([observation]), dtype=T.float32).to(self.Q_value.device)
-            actions = self.Q_value.forward(state)
+            self.Q_value.eval()
+            with T.no_grad():
+                state = T.tensor(np.array([observation]), dtype=T.float32).to(self.Q_value.device)
+                actions = self.Q_value.forward(state)
+            self.Q_value.train()
             # We get the index of the highest Q value. This is returned in a tensor, we use item() to convertit to
             # a scaler
             action = T.argmax(actions).item()
