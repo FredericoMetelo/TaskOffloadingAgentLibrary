@@ -31,9 +31,8 @@ class DDQNAgent(Agent):
     """
 
     def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=500, epsilon_start=0.7,
-                 epsilon_decay=5e-4, gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7,
-                 control_type="DQN"):
-        super().__init__(input_shape, action_space, output_shape, memory_max_size)
+                 epsilon_decay=5e-4, gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7, collect_data=False, control_type="DQN"):
+        super().__init__(input_shape, action_space, output_shape, memory_max_size, collect_data=collect_data)
         # Parameters:
         self.epsilon = epsilon_start
         self.epsilon_decay = epsilon_decay
@@ -66,10 +65,10 @@ class DDQNAgent(Agent):
         self.last_losses = np.zeros(self.amount_of_metrics)
         self.last_rewards = np.zeros(self.amount_of_metrics)
 
-    def train_loop(self, env, num_episodes, print_instead=True, controllers=None, warm_up_file=None, load_weights=None):
+    def train_loop(self, env, num_episodes, print_instead=True, controllers=None, warm_up_file=None, load_weights=None, results_file=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
 
-        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes)
+        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes, file_name=results_file)
         self.dg = dg(agents=env.possible_agents)
         if warm_up_file is not None:
             self.warm_up(warm_up_file, env.possible_agents)
@@ -126,11 +125,11 @@ class DDQNAgent(Agent):
                 # self.get_stats(last_loss, score, avg_reward, cumulative_reward, step, step, i, env)
                 step += 1
             self.mh.compile_aggregate_metrics(i, step)
-            print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
-                                                                             self.mh.episode_average_reward(i)))
+            print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon, self.mh.episode_average_reward(i)))
 
-        self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type,
-                                   print_instead=print_instead)
+        if results_file is not None:
+            self.mh.store_as_cvs(results_file)
+        self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
         self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
         self.mh.clean_plt_resources()
 

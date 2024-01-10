@@ -73,7 +73,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 1000
+    num_episodes = 2
 
     # For plotting metrics
     all_epochs = []
@@ -86,7 +86,7 @@ if __name__ == '__main__':
                           action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
                           batch_size=100,
                           epsilon_start=1.0,
-                          epsilon_decay= (1.0 - 0.1 )/(num_episodes * 1),  # 1000 instead of 1 Start 1.0, go down to 0.1 at the end
+                          epsilon_decay=(1.0 - 0.1)/(num_episodes * 500),
                           epsilon_end=0.1,
                           gamma=0.99,
                           update_interval=150,
@@ -95,21 +95,25 @@ if __name__ == '__main__':
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None
         # load_weights = "./models/warm_up_Q_value.pth.tar"
-        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file, load_weights=load_weights)  #
+        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
+                         load_weights=load_weights, results_file="./OutputData/DQN_results.cvs")
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
         #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
         #                  output_shape=shape_a_flat,
         #                  agents=env.possible_agents,
         #                  gamma=0.55,
-        #                  steps_for        _return=150,
+        #                  steps_for_return=150,
         #                  learning_rate=0.00001)
         # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
 
         # Baselines ===================================================================
         # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
         #                               output_shape=max_neighbours,
-        #                               action_space=env.action_space("worker_0"))
+        #                               action_space=env.action_space("worker_0"),'
+        #                               collect_data=True,
+        #                               agents=env.possible_agents
+        #                               )
         # rand.execute_simulation(env, num_episodes, print_instead=False)
 
         # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
@@ -122,7 +126,9 @@ if __name__ == '__main__':
         # TEST:
         # nothing = AlwaysLocal(input_shape=shape_obs_flat,
         #                       output_shape=max_neighbours,
-        #                       action_space=env.action_space("worker_0"))
+        #                       action_space=env.action_space("worker_0"),
+        #                       agents=env.possible_agents
+        #                       )
         # nothing.execute_simulation(env, num_episodes, print_instead=False)
         env.close()
 

@@ -1,11 +1,13 @@
+import csv
+
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class MetricHelper:
-    def __init__(self, agents, num_nodes, num_episodes):
+    def __init__(self, agents, num_nodes, num_episodes, file_name):
         self.reward_per_agent = {}
-        self.reward_per_agent_history = {agent: [] for agent in agents}         
+        self.reward_per_agent_history = {agent: [] for agent in agents}
 
         self.loss_per_agent = {}
         self.loss_per_agent_history = {agent: [] for agent in agents}
@@ -26,6 +28,7 @@ class MetricHelper:
         self.num_episodes = num_episodes
         self.num_nodes = num_nodes
         self.agents = agents
+        self.file_name = file_name
 
     def compile_aggregate_metrics(self, episode, no_steps):
 
@@ -136,3 +139,30 @@ class MetricHelper:
     def clean_plt_resources(self):
         plt.close('all')
         return
+
+    def store_as_cvs(self, file_name):
+        headers = []
+        rows = []
+
+        for agent in self.agents:
+            headers.extend([f"{agent}_loss", f"{agent}_reward"])
+
+        headers.extend(["overloaded", "occupancy", "response_time"])
+
+        for i in range(len(self.occupancy_history)):
+            row_data = {}
+            for agent in self.reward_per_agent_history.keys():
+                row_data[f"{agent}_loss"] = self.loss_per_agent_history[agent][i]
+                row_data[f"{agent}_reward"] = self.reward_per_agent_history[agent][i]
+            row_data["overloaded"] = self.overloaded_nodes_history[i]
+            row_data["occupancy"] = self.occupancy_history[i]
+            row_data["response_time"] = self.average_response_time_history[i]
+            rows.append(row_data)
+
+        with open(file_name, 'w', newline='') as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=headers, lineterminator='\n')
+            csv_writer.writeheader()
+            csv_writer.writerows(rows)
+
+        # Example usage remains the same
+

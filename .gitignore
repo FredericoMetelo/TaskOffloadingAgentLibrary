@@ -7,3 +7,4 @@ Datasets/*.tar.gz
 Datasets/*/*.tar.gz
 Datasets/*.csv
 Datasets/*/*.csv
+OutputData/*.csv
