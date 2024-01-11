@@ -52,7 +52,7 @@ if __name__ == '__main__':
     # log_dir='logs/'
     log_dir = None
     config_dict = ch.generate_config_dict(expected_occupancy=0.8, controllers=controllers, task_probs=task_probs, task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI, RANDOMIZEPOSITIONS=False, RANDOMIZETOPOLOGY=False)
-    env = PeersimEnv(configs=config_dict, render_mode=None, simtype="basic", log_dir=log_dir, randomize_seed=True)
+    env = PeersimEnv(configs=config_dict, render_mode='ansi', simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
 
     obs = env.observation_space("worker_0")
@@ -93,8 +93,8 @@ if __name__ == '__main__':
                           learning_rate=0.001)
         warm_up_file = None
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-        load_weights = None
-        # load_weights = "./models/warm_up_Q_value.pth.tar"
+        # load_weights = None
+        load_weights = "./models/warm_up_Q_value.pth.tar"
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file, load_weights=load_weights)  #
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
@@ -102,7 +102,7 @@ if __name__ == '__main__':
         #                  output_shape=shape_a_flat,
         #                  agents=env.possible_agents,
         #                  gamma=0.55,
-        #                  steps_for        _return=150,
+        #                  steps_for_return=150,
         #                  learning_rate=0.00001)
         # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers)
 

@@ -16,7 +16,7 @@ class DQN(nn.Module):
     Honestly, just trying to get this to work. So Im leaving this temporary comment.
     """
 
-    def __init__(self, lr, input_dims, fc1_dims, fc2_dims, fc3_dims, n_actions, gamma=0.99):
+    def __init__(self, lr, input_dims, fc1_dims, fc2_dims, fc3_dims, fc4_dims, n_actions, gamma=0.99):
         super(DQN, self).__init__()
 
         # Gamma makes no sense here, but for some reason this does not work without it.
@@ -25,6 +25,7 @@ class DQN(nn.Module):
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.fc3_dims = fc3_dims
+        self.fc4_dims = fc4_dims
         self.n_actions = n_actions
 
         # *self.input_dims is a way to unpack a list or tuple. It is equivalent to:
@@ -40,11 +41,11 @@ class DQN(nn.Module):
         self.bn3 = nn.BatchNorm1d(self.fc3_dims)
 
         #L4
-        # self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
-        # self.bn4 = nn.BatchNorm1d(self.fc4_dims)
+        self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
+        self.bn4 = nn.BatchNorm1d(self.fc4_dims)
 
         # Output
-        self.out = nn.Linear(self.fc3_dims, self.n_actions)
+        self.out = nn.Linear(self.fc4_dims, self.n_actions)
 
         self.optimizer = optim.Adam(self.parameters(), lr=lr)
         # MSE is the loss function
@@ -61,8 +62,9 @@ class DQN(nn.Module):
         layer1 = F.relu(self.bn1(self.fc1(state)))
         layer2 = F.relu(self.bn2(self.fc2(layer1)))
         layer3 = F.relu(self.bn3(self.fc3(layer2)))
+        layer4 = F.relu(self.bn4(self.fc4(layer3)))
         # layer4 = F.relu(self.bn4(self.fc4(layer3)))
-        q_values = self.out(layer3) # TODO
+        q_values = self.out(layer4) # TODO
 
         return q_values
 

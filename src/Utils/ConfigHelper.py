@@ -178,7 +178,7 @@ def generate_config_dict(controllers="[0]",
         "protocol.clt.numberOfDAG": "1",
         "protocol.clt.dagWeights": "1",
         "protocol.clt.edges": "",
-        "protocol.clt.maxDeadline": to_string_array(task_deadlines),
+        "protocol.clt.minDeadline": to_string_array(task_deadlines),
         "protocol.clt.vertices": "1",
 
         "protocol.props.B": str(comm_B),
