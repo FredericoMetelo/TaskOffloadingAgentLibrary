@@ -25,6 +25,8 @@ class MetricHelper:
         self._aux_average_reward = 0
         self.average_loss = []
 
+        self.density_of_actions = {agent: {} for agent in agents}
+
         self.num_episodes = num_episodes
         self.num_nodes = num_nodes
         self.agents = agents
@@ -43,6 +45,8 @@ class MetricHelper:
         self.average_rewards += [self._aux_average_reward / no_steps]
 
         self.__reset_step_metrics()
+    def register_action(self, action, agent):
+        self.density_of_actions[agent] += [action]
 
     def episode_average_reward(self, episode=-1):
         return self.average_rewards[episode]
@@ -95,8 +99,10 @@ class MetricHelper:
             ax[1].plot(x, agent_mean_loss, label=agent)
 
         if print_instead:
+            print(f"Saving plot plt_train_metrics_{title}")
             plt.savefig(f"./Plots/plt_train_metrics_{title}")
         else:
+            print(f"Showing plot {title}")
             plt.show()
 
     def plot_simulation_data(self, num_episodes, title='default', print_instead=False, csv_dump=True):
@@ -123,8 +129,10 @@ class MetricHelper:
         if title != 'default':
             plt.title(title)
         if print_instead:
+            print(f"Saving plot plt_sim_data_{title}")
             plt.savefig(f"./Plots/plt_sim_data_{title}")
         else:
+            print(f"Showing plot {title}")
             plt.show()
 
         if csv_dump:
@@ -141,6 +149,7 @@ class MetricHelper:
         return
 
     def store_as_cvs(self, file_name):
+        print(f"Storing as csv {file_name}")
         headers = []
         rows = []
 

@@ -20,6 +20,7 @@ import traceback
 
 import torch as T
 
+
 def print_all_csv(dir="./Plots/"):
     # Help from ChatGPT
     csv_files = [file for file in os.listdir(dir) if file.endswith(".csv")]
@@ -41,17 +42,48 @@ def print_all_csv(dir="./Plots/"):
     plt.show()
     return
 
-controllers = ["1"]  # , "5" only one for now...
 
-task_probs = [1]
-task_sizes = [150]
-task_instr = [4e7]
-task_CPI = [1]
+controllers = ["0"]  # , "5" only one for now...
+config_dict = ch.generate_config_dict(expected_occupancy=0.8,
+                                      controllers=controllers,
+                                      # Simulation Parameters
+                                      size=3,
+                                      simulation_time=1000,
+                                      frequency_of_action=5,
+                                      has_cloud=0,
+                                      cloud_VM_processing_power=[1e8],
+
+                                      nodes_per_layer=[1, 1, 1],
+                                      cloud_access=[0, 0, 0],
+                                      freqs_per_layer=[2e7, 1e7, 4e7],
+                                      no_cores_per_layer=[1, 1, 2],
+                                      q_max_per_layer=[10, 5, 50],
+                                      variations_per_layer=[0, 0, 0],
+
+                                      task_probs=[1],
+                                      task_sizes=[150],
+                                      task_instr=[4e7],
+                                      task_CPI=[1],
+                                      task_deadlines=[100],
+                                      target_time_for_occupancy=0.5,
+
+                                      comm_B=2,
+                                      comm_Beta1=0.001,
+                                      comm_Beta2=4,
+                                      comm_Power=20,
+
+                                      weight_utility=10,
+                                      weight_delay=1,
+                                      weight_overload=150,
+                                      RANDOMIZETOPOLOGY=False,
+                                      RANDOMIZEPOSITIONS=False,
+                                      POSITIONS="18.55895350495783,17.02475796027715;19.56499372388999,17.28732691557995;5.366872150976409,13.28729893321355",
+                                      TOPOLOGY="0,1,2;1,0;2,0")
 
 if __name__ == '__main__':
     # log_dir='logs/'
     log_dir = None
-    config_dict = ch.generate_config_dict(expected_occupancy=0.8, controllers=controllers, task_probs=task_probs, task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI, RANDOMIZEPOSITIONS=False, RANDOMIZETOPOLOGY=False)
+
     env = PeersimEnv(configs=config_dict, render_mode=None, simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
 
@@ -73,7 +105,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 2
+    num_episodes = 500
 
     # For plotting metrics
     all_epochs = []
@@ -86,7 +118,7 @@ if __name__ == '__main__':
                           action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
                           batch_size=100,
                           epsilon_start=1.0,
-                          epsilon_decay=(1.0 - 0.1)/(num_episodes * 500),
+                          epsilon_decay=(1.0 - 0.1) / (num_episodes * 500),
                           epsilon_end=0.1,
                           gamma=0.99,
                           update_interval=150,
