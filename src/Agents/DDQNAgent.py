@@ -48,7 +48,7 @@ class DDQNAgent(Agent):
         self.reward_memory = np.zeros(self.memory_size, dtype=np.float32)
         self.action_memory = np.zeros((self.memory_size, 1), dtype=np.float32)  # Hard coded, represents the target only
         self.new_state_memory = np.zeros((self.memory_size, *self.input_shape), dtype=np.float32)
-        self.terminal_memory = np.zeros(self.memory_size, dtype=np.bool)
+        self.terminal_memory = np.zeros(self.memory_size, dtype=bool)
         self.memory_counter = 0
         self.control_type = "DDQN"
 
@@ -94,6 +94,8 @@ class DDQNAgent(Agent):
                 targets = {agent: np.floor(self.get_action(states[idx])) for idx, agent in
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
+
+                self.register_actions(actions)
 
                 next_states, rewards, dones, _, info = env.step(actions)
                 next_states = utils.flatten_state_list(next_states, agent_list)
@@ -262,3 +264,7 @@ class DDQNAgent(Agent):
             self.target_Q_value.load_state_dict(self.Q_value.state_dict())
         self.Q_value.save_checkpoint(filename="warm_up_Q_value.pth.tar", epoch=-1)
         print("Warm up complete")
+
+    def register_actions(self, actions):
+        for worker, action in actions.items():
+            self.mh.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)

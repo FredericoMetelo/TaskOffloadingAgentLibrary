@@ -46,7 +46,7 @@ class MetricHelper:
 
         self.__reset_step_metrics()
     def register_action(self, action, agent):
-        self.density_of_actions[agent] += [action]
+        self.density_of_actions[agent][action] = self.density_of_actions[agent].get(action, 0) + 1
 
     def episode_average_reward(self, episode=-1):
         return self.average_rewards[episode]

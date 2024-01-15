@@ -13,6 +13,7 @@ from Agents.DDQNAgent import DDQNAgent
 from src.Agents.A2CAgent import A2CAgent
 from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
+from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
 from src.Utils import utils as fl
 from src.Utils import ConfigHelper as ch
@@ -47,13 +48,13 @@ controllers = ["0"]  # , "5" only one for now...
 config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       controllers=controllers,
                                       # Simulation Parameters
-                                      size=3,
+                                      size=7,
                                       simulation_time=1000,
                                       frequency_of_action=5,
                                       has_cloud=0,
                                       cloud_VM_processing_power=[1e8],
 
-                                      nodes_per_layer=[1, 1, 1],
+                                      nodes_per_layer=[1, 5, 1],
                                       cloud_access=[0, 0, 0],
                                       freqs_per_layer=[2e7, 1e7, 4e7],
                                       no_cores_per_layer=[1, 1, 2],
@@ -77,14 +78,14 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       weight_overload=150,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
-                                      POSITIONS="18.55895350495783,17.02475796027715;19.56499372388999,17.28732691557995;5.366872150976409,13.28729893321355",
-                                      TOPOLOGY="0,1,2;1,0;2,0")
+                                      POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
+                                      TOPOLOGY="0,1,2,3,4,5,6;1,0;2,0;3,0;4,0;5,0;6,0")
 
 if __name__ == '__main__':
     # log_dir='logs/'
     log_dir = None
 
-    env = PeersimEnv(configs=config_dict, render_mode=None, simtype="basic", log_dir=log_dir, randomize_seed=True)
+    env = PeersimEnv(configs=config_dict, render_mode="human", simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
 
     obs = env.observation_space("worker_0")
@@ -111,6 +112,16 @@ if __name__ == '__main__':
     all_epochs = []
     all_penalties = []
     try:
+        # Manual Debugging ============================================================
+        manual = ManualSelection(input_shape=shape_obs_flat,
+                                 output_shape=max_neighbours,
+                                 action_space=env.action_space("worker_0"),
+                                 collect_data=True,
+                                 agents=env.possible_agents,
+                                 file_name="manual"
+                                 )
+        manual.execute_simulation(env, num_episodes, print_instead=False)
+
         # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
         # NN ==========================================================================
         agent = DDQNAgent(input_shape=shape_obs_flat,
@@ -118,7 +129,7 @@ if __name__ == '__main__':
                           action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
                           batch_size=100,
                           epsilon_start=1.0,
-                          epsilon_decay=(1.0 - 0.1) / (num_episodes * 500),
+                          epsilon_decay=(1.0 - 0.1) / (num_episodes * 100),
                           epsilon_end=0.1,
                           gamma=0.99,
                           update_interval=150,
