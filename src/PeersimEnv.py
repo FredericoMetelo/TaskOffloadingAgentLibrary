@@ -78,7 +78,7 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       weight_overload=150,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
-                                      POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
+                                      POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;22.366872150976409,33.28729893321355",
                                       TOPOLOGY="0,1,2,3,4,5,6;1,0;2,0;3,0;4,0;5,0;6,0")
 
 if __name__ == '__main__':
@@ -113,14 +113,14 @@ if __name__ == '__main__':
     all_penalties = []
     try:
         # Manual Debugging ============================================================
-        manual = ManualSelection(input_shape=shape_obs_flat,
-                                 output_shape=max_neighbours,
-                                 action_space=env.action_space("worker_0"),
-                                 collect_data=True,
-                                 agents=env.possible_agents,
-                                 file_name="manual"
-                                 )
-        manual.execute_simulation(env, num_episodes, print_instead=False)
+        # manual = ManualSelection(input_shape=shape_obs_flat,
+        #                          output_shape=max_neighbours,
+        #                          action_space=env.action_space("worker_0"),
+        #                          collect_data=True,
+        #                          agents=env.possible_agents,
+        #                          file_name="manual"
+        #                          )
+        # manual.execute_simulation(env, num_episodes, print_instead=False)
 
         # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
         # NN ==========================================================================

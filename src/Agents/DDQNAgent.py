@@ -161,7 +161,7 @@ class DDQNAgent(Agent):
 
         # In this case, we are using a epsilon-greedy policy
         if np.random.random() < self.epsilon:
-            print("Exploring")
+            print(f"Exploring ({self.epsilon})")
             action = np.random.choice(self.actions)
         else:
             print("Exploiting")
