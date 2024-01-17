@@ -163,6 +163,7 @@ def generate_config_dict(controllers="[0]",
 
         "protocol.mng.r_u": str(weight_utility),
         "protocol.mng.X_d": str(weight_delay),
+
         "protocol.mng.X_o": str(weight_overload),
         "protocol.mng.cycle": str(frequency_of_action),
 

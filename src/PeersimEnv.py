@@ -63,7 +63,7 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
 
                                       task_probs=[1],
                                       task_sizes=[150],
-                                      task_instr=[4e7],
+                                      task_instr=[8e7],
                                       task_CPI=[1],
                                       task_deadlines=[100],
                                       target_time_for_occupancy=0.5,
@@ -74,11 +74,11 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       comm_Power=20,
 
                                       weight_utility=10,
-                                      weight_delay=1,
-                                      weight_overload=150,
+                                      weight_delay=5,
+                                      weight_overload=5,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
-                                      POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;22.366872150976409,33.28729893321355",
+                                      POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
                                       TOPOLOGY="0,1,2,3,4,5,6;1,0;2,0;3,0;4,0;5,0;6,0")
 
 if __name__ == '__main__':
@@ -87,6 +87,15 @@ if __name__ == '__main__':
 
     env = PeersimEnv(configs=config_dict, render_mode="human", simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
+
+
+    # TODO The agent is still broken. Right now it keeps offloading to sub-optimal nodes. I believe It's not due to
+    #  the reward. It can get better rewards (less punish) in another nodes. But the agent just laser focuses on one
+    #  node, usually a bad option, made worse by the insistance of the agent on overloading the node in question. I
+    #  have messed around with distance between the nodes, and I believe the problem isn't there. Will have to move
+    #  to acessing where in the agent or the interaction loop is the problem. Pay special attention to the states +
+    #  the actions being taken, check if there is no offset, the states are the ones the agent should observe.
+    #  Confirm the reward is being properly computed.
 
     obs = env.observation_space("worker_0")
     flat_obs = fl.flatten_observation(obs.sample())
@@ -127,13 +136,13 @@ if __name__ == '__main__':
         agent = DDQNAgent(input_shape=shape_obs_flat,
                           output_shape=max_neighbours,
                           action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
-                          batch_size=100,
+                          batch_size=500,
                           epsilon_start=1.0,
-                          epsilon_decay=(1.0 - 0.1) / (num_episodes * 100),
+                          epsilon_decay=(1.0 - 0.3) / (999 * 50),
                           epsilon_end=0.1,
-                          gamma=0.99,
+                          gamma=0.60,
                           update_interval=150,
-                          learning_rate=0.001)
+                          learning_rate=0.01)
         warm_up_file = None
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None
