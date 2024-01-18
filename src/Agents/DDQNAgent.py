@@ -227,7 +227,7 @@ class DDQNAgent(Agent):
         self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon > self.epsilon_end else self.epsilon_end
 
         # In-place gradient clipping src:https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
-        # T.nn.utils.clip_grad_value_(self.Q_value.parameters(), 100)
+        T.nn.utils.clip_grad_value_(self.Q_value.parameters(), 100)
         self.Q_value.optimizer.step()  # Manually confirmed that there is some training going on. The values change at least.
         return loss.item()
 

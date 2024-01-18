@@ -55,7 +55,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 250  # per dataset
+    num_episodes = 1000  # per dataset
 
     try:
         for i in range(1):

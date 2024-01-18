@@ -19,6 +19,11 @@ class DQN(nn.Module):
 
     def __init__(self, lr, input_dims, fc1_dims, fc2_dims, fc3_dims, n_actions, gamma=0.99):
         super(DQN, self).__init__()
+        # This is the constructor of the class, it is called when we create an instance of the class.
+        # the weird behaviour I was getting where the agent always chose the same action was because I was
+        # doing batch normalization. This is bad for DQN.
+        # https://discuss.pytorch.org/t/dqn-always-gives-same-output-regardless-of-input/94895
+        # https://rdednl.github.io/blog/batch-norm-rl/
 
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -74,12 +79,12 @@ class DQN(nn.Module):
         # This is the forward pass of the network, it is called when we call the network with an input
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
-        layer11 = F.leaky_relu(self.bn11(self.fc11(state)))
-        layer12 = F.leaky_relu(self.bn12(self.fc12(layer11)))
-        layer21 = F.leaky_relu(self.bn21(self.fc21(layer12)))
-        layer22 = F.leaky_relu(self.bn22(self.fc22(layer21)))
-        layer31 = F.leaky_relu(self.bn31(self.fc31(layer22)))
-        last = F.leaky_relu(self.bn32(self.fc32(layer31)))
+        layer11 = F.leaky_relu(self.fc11(state))
+        layer12 = F.leaky_relu(self.fc12(layer11))
+        layer21 = F.leaky_relu(self.fc21(layer12))
+        layer22 = F.leaky_relu(self.fc22(layer21))
+        layer31 = F.leaky_relu(self.fc31(layer22))
+        last = F.leaky_relu(self.fc32(layer31))
         # layer4 = F.relu(self.bn4(self.fc4(layer3)))
         q_values = self.out(last)  # TODO
 
