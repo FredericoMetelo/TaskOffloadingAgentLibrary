@@ -73,9 +73,9 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       comm_Beta2=4,
                                       comm_Power=20,
 
-                                      weight_utility=10,
-                                      weight_delay=5,
-                                      weight_overload=5,
+                                      weight_utility=2,
+                                      weight_delay=1,
+                                      weight_overload=10,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
                                       POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
@@ -141,8 +141,8 @@ if __name__ == '__main__':
                           epsilon_decay=(1.0 - 0.3) / (999 * 50),
                           epsilon_end=0.1,
                           gamma=0.60,
-                          update_interval=150,
-                          learning_rate=0.01)
+                          update_interval=300,
+                          learning_rate=0.00001)
         warm_up_file = None
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None

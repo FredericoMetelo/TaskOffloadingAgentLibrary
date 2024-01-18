@@ -29,17 +29,31 @@ class DQN(nn.Module):
         # *self.input_dims is a way to unpack a list or tuple. It is equivalent to:
         # Network
         # L1
-        self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
-        torch.nn.init.kaiming_normal_(self.fc1.weight, nonlinearity='leaky_relu')
-        self.bn1 = nn.BatchNorm1d(self.fc1_dims)
+        self.fc11 = nn.Linear(*self.input_dims, self.fc1_dims)
+        torch.nn.init.kaiming_normal_(self.fc11.weight, nonlinearity='leaky_relu')
+        self.bn11 = nn.BatchNorm1d(self.fc1_dims)
+
+        self.fc12 = nn.Linear(self.fc1_dims, self.fc1_dims)
+        torch.nn.init.kaiming_normal_(self.fc12.weight, nonlinearity='leaky_relu')
+        self.bn12 = nn.BatchNorm1d(self.fc1_dims)
+
         # L2
-        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        torch.nn.init.kaiming_normal_(self.fc2.weight, nonlinearity='leaky_relu')
-        self.bn2 = nn.BatchNorm1d(self.fc2_dims)
+        self.fc21 = nn.Linear(self.fc1_dims, self.fc2_dims)
+        torch.nn.init.kaiming_normal_(self.fc21.weight, nonlinearity='leaky_relu')
+        self.bn21 = nn.BatchNorm1d(self.fc2_dims)
+
+        self.fc22 = nn.Linear(self.fc2_dims, self.fc2_dims)
+        torch.nn.init.kaiming_normal_(self.fc22.weight, nonlinearity='leaky_relu')
+        self.bn22 = nn.BatchNorm1d(self.fc2_dims)
+
         #L3
-        self.fc3 = nn.Linear(self.fc2_dims, self.fc3_dims)
-        torch.nn.init.kaiming_normal_(self.fc3.weight, nonlinearity='leaky_relu')
-        self.bn3 = nn.BatchNorm1d(self.fc3_dims)
+        self.fc31 = nn.Linear(self.fc2_dims, self.fc3_dims)
+        torch.nn.init.kaiming_normal_(self.fc31.weight, nonlinearity='leaky_relu')
+        self.bn31 = nn.BatchNorm1d(self.fc3_dims)
+
+        self.fc32 = nn.Linear(self.fc3_dims, self.fc3_dims)
+        torch.nn.init.kaiming_normal_(self.fc32.weight, nonlinearity='leaky_relu')
+        self.bn32 = nn.BatchNorm1d(self.fc3_dims)
 
         #L4
         # self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
@@ -60,11 +74,14 @@ class DQN(nn.Module):
         # This is the forward pass of the network, it is called when we call the network with an input
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
-        layer1 = F.leaky_relu(self.bn1(self.fc1(state)))
-        layer2 = F.leaky_relu(self.bn2(self.fc2(layer1)))
-        layer3 = F.leaky_relu(self.bn3(self.fc3(layer2)))
+        layer11 = F.leaky_relu(self.bn11(self.fc11(state)))
+        layer12 = F.leaky_relu(self.bn12(self.fc12(layer11)))
+        layer21 = F.leaky_relu(self.bn21(self.fc21(layer12)))
+        layer22 = F.leaky_relu(self.bn22(self.fc22(layer21)))
+        layer31 = F.leaky_relu(self.bn31(self.fc31(layer22)))
+        last = F.leaky_relu(self.bn32(self.fc32(layer31)))
         # layer4 = F.relu(self.bn4(self.fc4(layer3)))
-        q_values = self.out(layer3)  # TODO
+        q_values = self.out(last)  # TODO
 
         return q_values
 
