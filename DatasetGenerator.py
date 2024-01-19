@@ -40,6 +40,7 @@ def print_all_csv(dir="./Plots/"):
     # Display the plot
     plt.show()
     return
+wait_on_fail = True
 
 controllers = ["1"]  # , "5" only one for now...
 
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 1000  # per dataset
+    num_episodes = 500  # per dataset
 
     try:
         for i in range(1):
@@ -105,6 +106,8 @@ if __name__ == '__main__':
 
     except Exception:
         print(traceback.format_exc())
+        if wait_on_fail:
+            input("Press Enter to continue...")
         print("Training Failed. Miserably.")
         env.close()
 
