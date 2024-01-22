@@ -78,7 +78,7 @@ class ControlAlgorithm:
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                              self.mh.episode_average_reward(i)))
-        self.mh.store_as_cvs()
+        self.mh.store_as_cvs(file_name=self.result_file)
         self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type + self.plot_name, print_instead=print_instead)
         self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type + self.plot_name, print_instead=print_instead)
         self.mh.clean_plt_resources()

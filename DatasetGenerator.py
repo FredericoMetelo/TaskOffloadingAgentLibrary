@@ -42,7 +42,7 @@ def print_all_csv(dir="./Plots/"):
     return
 wait_on_fail = True
 
-controllers = ["1"]  # , "5" only one for now...
+# controllers = ["1"]  # , "5" only one for now...
 
 task_probs = [1]
 task_sizes = [150]
@@ -67,9 +67,43 @@ if __name__ == '__main__':
 
             file_name = "./Datasets/LeastQueueAgent/LeastQueueAgent_{:.1f}".format(expected_occupancy)
 
-            config_dict = ch.generate_config_dict(expected_occupancy=expected_occupancy, controllers=controllers, task_probs=task_probs,
-                                                  task_sizes=task_sizes, task_instr=task_instr, task_CPI=task_CPI,
-                                                  RANDOMIZEPOSITIONS=False, POSITIONS=POSITIONS, RANDOMIZETOPOLOGY=False, TOPOLOGY=TOPOLOGY)
+            controllers = ["0"]  # , "5" only one for now...
+            config_dict = ch.generate_config_dict(expected_occupancy=0.8,
+                                                  controllers=controllers,
+                                                  # Simulation Parameters
+                                                  size=7,
+                                                  simulation_time=1000,
+                                                  frequency_of_action=5,
+                                                  has_cloud=0,
+                                                  cloud_VM_processing_power=[1e8],
+
+                                                  nodes_per_layer=[1, 5, 1],
+                                                  cloud_access=[0, 0, 0],
+                                                  freqs_per_layer=[2e7, 1e7, 4e7],
+                                                  no_cores_per_layer=[1, 1, 2],
+                                                  q_max_per_layer=[10, 5, 50],
+                                                  variations_per_layer=[0, 0, 0],
+
+                                                  task_probs=[1],
+                                                  task_sizes=[150],
+                                                  task_instr=[8e7],
+                                                  task_CPI=[1],
+                                                  task_deadlines=[100],
+                                                  target_time_for_occupancy=0.5,
+
+                                                  comm_B=2,
+                                                  comm_Beta1=0.001,
+                                                  comm_Beta2=4,
+                                                  comm_Power=20,
+
+                                                  weight_utility=2,
+                                                  weight_delay=20,
+                                                  weight_overload=150,
+                                                  RANDOMIZETOPOLOGY=False,
+                                                  RANDOMIZEPOSITIONS=False,
+                                                  POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
+                                                  TOPOLOGY="0,1,2,3,4,5,6;1,0;2,0;3,0;4,0;5,0;6,0")
+
             env = PeersimEnv(configs=config_dict, render_mode="ansi", simtype="basic", log_dir='logs/', randomize_seed=True)
             env.reset()
 

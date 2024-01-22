@@ -32,7 +32,7 @@ class DDQNAgent(Agent):
 
     def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=10000, epsilon_start=0.7,
                  epsilon_decay=5e-4, gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7,
-                 collect_data=False, control_type="DQN"):
+                 collect_data=False, save_interval=50, control_type="DQN"):
         super().__init__(input_shape, action_space, output_shape, memory_max_size, collect_data=collect_data)
         # Parameters:
         self.epsilon = epsilon_start
@@ -58,8 +58,9 @@ class DDQNAgent(Agent):
         self.Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256, fc3_dims=128,
                            n_actions=self.action_shape)
         self.target_Q_value = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256,
-                                  fc3_dims=128,
-                                  n_actions=self.action_shape)
+                                  fc3_dims=128, n_actions=self.action_shape)
+
+        self.save_interval = save_interval
         self.target_Q_value.load_state_dict(self.Q_value.state_dict())
 
         summary(self.Q_value, input_size=self.input_shape)
@@ -132,6 +133,8 @@ class DDQNAgent(Agent):
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
                                                                              self.mh.episode_average_reward(i)))
+            if i % self.save_interval == 0:
+                self.Q_value.save_checkpoint(filename=f"DDQN_Q_value_{i}.pth.tar", epoch=i)
 
         if results_file is not None:
             self.mh.store_as_cvs(results_file)
@@ -165,10 +168,10 @@ class DDQNAgent(Agent):
 
         # In this case, we are using a epsilon-greedy policy
         if np.random.random() < self.epsilon:
-            print(f"Exploring ({self.epsilon})")
+            print(f"(R) Exploring ({self.epsilon})")
             action = np.random.choice(self.actions)
         else:
-            print("Exploiting")
+            print("(T) Exploiting")
             #  We need to set the network to evaluation mode, because we are only predicting the action for one state,
             #  and batchnorm layers.
             #
