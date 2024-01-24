@@ -144,7 +144,8 @@ if __name__ == '__main__':
                           gamma=0.60,
                           save_interval=100,
                           update_interval=300,
-                          learning_rate=0.00001)
+                          learning_rate=0.00001,
+                          )
         warm_up_file = None
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         # load_weights = None
