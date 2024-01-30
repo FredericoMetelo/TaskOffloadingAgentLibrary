@@ -52,7 +52,7 @@ task_CPI = [1]
 if __name__ == '__main__':
 
     alpha = 0.1
-    gamma = 0.6
+    gamma = 0.99
     epsilon = 0.1
     train = 100
     test = 1
