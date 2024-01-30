@@ -12,6 +12,8 @@ OUTPUT=$(sed 's/.*\[\(.*\)|/\1/' "$input_file")
 OUTPUT=$(echo "$OUTPUT" | sed 's/ \].*/;/g' )
 OUTPUT=$(echo "$OUTPUT" | sed 's/ /,/g' )
 OUTPUT=$(echo "$OUTPUT" | sed ':a;N;$!ba;s/\n//g' )
+OUTPUT=$(echo "$OUTPUT" | sed 's/;$//')
+
 
 echo "$OUTPUT"
 echo "Script executed successfully!"
