@@ -84,8 +84,8 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
 
 wait_on_fail = False
 if __name__ == '__main__':
-    # log_dir='logs/'
-    log_dir = None
+    log_dir='logs/'
+    # log_dir = None
 
     env = PeersimEnv(configs=config_dict, render_mode="human", simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     print("State Space {}".format(shape_obs_flat))
 
     alpha = 0.1
-    gamma = 0.6
+    gamma = 0.99
     epsilon = 0.1
     train = 100
     test = 1
