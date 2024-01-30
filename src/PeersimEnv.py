@@ -48,13 +48,13 @@ controllers = ["0"]  # , "5" only one for now...
 config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       controllers=controllers,
                                       # Simulation Parameters
-                                      size=7,
+                                      size=30,
                                       simulation_time=1000,
                                       frequency_of_action=5,
                                       has_cloud=0,
                                       cloud_VM_processing_power=[1e8],
 
-                                      nodes_per_layer=[1, 5, 1],
+                                      nodes_per_layer=[15, 10, 5],
                                       cloud_access=[0, 0, 0],
                                       freqs_per_layer=[2e7, 1e7, 4e7],
                                       no_cores_per_layer=[1, 1, 2],
@@ -76,10 +76,11 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       weight_utility=2,
                                       weight_delay=20,
                                       weight_overload=150,
-                                      RANDOMIZETOPOLOGY=False,
-                                      RANDOMIZEPOSITIONS=False,
-                                      POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
-                                      TOPOLOGY="0,1,2,3,4,5,6;1,0;2,0;3,0;4,0;5,0;6,0")
+                                      RANDOMIZETOPOLOGY=True,
+                                      RANDOMIZEPOSITIONS=True,
+                                      #POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
+                                      #TOPOLOGY="0,1,2,3,4,5,6;1,0;2,0;3,0;4,0;5,0;6,0"
+                                      )
 
 wait_on_fail = False
 if __name__ == '__main__':
@@ -148,10 +149,10 @@ if __name__ == '__main__':
                           )
         warm_up_file = None
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-        # load_weights = None
-        load_weights = "./models/DDQN_Q_value_300.pth.tar"
+        load_weights = None
+        #load_weights = "./models/DDQN_Q_value_300.pth.tar"
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-                         load_weights=load_weights, results_file="./OutputData/DQN_results.cvs")
+                         load_weights=load_weights, results_file="./OutputData/DQN_results_mult.cvs")
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
         #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
