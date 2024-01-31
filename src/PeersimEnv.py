@@ -15,6 +15,7 @@ from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
+from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.Utils import utils as fl
 from src.Utils import ConfigHelper as ch
 import traceback
@@ -44,7 +45,7 @@ def print_all_csv(dir="./Plots/"):
     return
 
 
-controllers = ["0"]  # , "5" only one for now...
+controllers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]  #
 config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       controllers=controllers,
                                       # Simulation Parameters
@@ -54,11 +55,11 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       has_cloud=0,
                                       cloud_VM_processing_power=[1e8],
 
-                                      nodes_per_layer=[15, 10, 5],
+                                      nodes_per_layer=[10, 10, 10],
                                       cloud_access=[0, 0, 0],
-                                      freqs_per_layer=[2e7, 1e7, 4e7],
+                                      freqs_per_layer=[4e7, 2e7, 8e7],
                                       no_cores_per_layer=[1, 1, 2],
-                                      q_max_per_layer=[10, 5, 50],
+                                      q_max_per_layer=[20, 10, 100],
                                       variations_per_layer=[0, 0, 0],
 
                                       task_probs=[1],
@@ -84,8 +85,8 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
 
 wait_on_fail = False
 if __name__ == '__main__':
-    log_dir='logs/'
-    # log_dir = None
+    # log_dir='logs/'
+    log_dir = None
 
     env = PeersimEnv(configs=config_dict, render_mode="human", simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
@@ -135,17 +136,18 @@ if __name__ == '__main__':
 
         # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
         # NN ==========================================================================
-        agent = DDQNAgent(input_shape=shape_obs_flat,
+        agent = DDQNAgentMARL(input_shape=shape_obs_flat,
                           output_shape=max_neighbours,
-                          action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
+                          action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
                           batch_size=500,
                           epsilon_start=1.0,
-                          epsilon_decay=(1.0 - 0.3) / (999 * 50),
+                          epsilon_decay=(1.0 - 0.3) / (999 * 500),
                           epsilon_end=0.3,
-                          gamma=0.60,
+                          gamma=0.99,
                           save_interval=100,
                           update_interval=300,
                           learning_rate=0.00001,
+                          agents=env.possible_agents,
                           )
         warm_up_file = None
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
