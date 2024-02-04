@@ -51,7 +51,7 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       # Simulation Parameters
                                       size=30,
                                       simulation_time=1000,
-                                      frequency_of_action=5,
+                                      frequency_of_action=1,
                                       has_cloud=0,
                                       cloud_VM_processing_power=[1e8],
 
@@ -118,7 +118,8 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 500
+    num_episodes = 500 # Testing saving of things
+
 
     # For plotting metrics
     all_epochs = []
