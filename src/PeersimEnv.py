@@ -118,7 +118,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 500
+    num_episodes = 10
 
     # For plotting metrics
     all_epochs = []
@@ -167,15 +167,6 @@ if __name__ == '__main__':
         #                  load_weights=load_weights, results_file="./OutputData/DQN_results_mult.cvs")
 
         # Baselines ===================================================================
-        rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
-                                      output_shape=max_neighbours,
-                                      action_space=env.action_space("worker_0"),
-                                      collect_data=True,
-                                      agents=env.possible_agents,
-                                      file_name="random",
-                                      plot_name="random"
-                                      )
-        rand.execute_simulation(env, num_episodes, print_instead=False)
 
         lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
                                  output_shape=max_neighbours,
@@ -186,6 +177,17 @@ if __name__ == '__main__':
                                     plot_name="least_queue"
                                  )
         lq.execute_simulation(env, num_episodes, print_instead=False)
+
+        rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
+                                      output_shape=max_neighbours,
+                                      action_space=env.action_space("worker_0"),
+                                      collect_data=True,
+                                      agents=env.possible_agents,
+                                      file_name="random",
+                                      plot_name="random"
+                                      )
+        rand.execute_simulation(env, num_episodes, print_instead=False)
+
         nothing = AlwaysLocal(input_shape=shape_obs_flat,
                               output_shape=max_neighbours,
                               action_space=env.action_space("worker_0"),

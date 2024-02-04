@@ -70,7 +70,7 @@ class ControlAlgorithm:
                 state = new_state
                 self.mh.update_metrics_after_step(rewards=reward, losses={agent: 0 for agent in env.agents},
                                                 overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
-                                                average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
+                                                average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES], # Note: This are per client and not per node.
                                                 occupancy=info[pg.STATE_G_OCCUPANCY])
                 if self.collect_data:
                     self.data_collector.add_data_point(i, step, state, action, reward, new_state, done)
