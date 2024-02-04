@@ -130,3 +130,22 @@ class ActorCritic(nn.Module):
         self.action_memory.append(actions)
         self.reward_memory.append(rewards)
         self.done_memory.append(dones)
+
+    def save_checkpoint(self, filename='dqn.pth.tar', path='./models', epoch=0):
+        # This saves the network parameters
+        print('... saving checkpoint ...')
+        T.save({
+            'epoch': epoch,
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'loss': self.lossFunction
+        }, os.path.join(path, filename))
+
+    def load_checkpoint(self, filename='./models/dqn.pth.tar'):
+        # This loads the network parameters
+        print('... loading checkpoint ...')
+        checkpoint = T.load(filename)
+        self.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        self.lossFunction = checkpoint['loss']

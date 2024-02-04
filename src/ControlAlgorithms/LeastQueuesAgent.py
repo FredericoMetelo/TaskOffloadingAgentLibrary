@@ -28,7 +28,11 @@ class LeastQueueAlgorithm(ControlAlgorithm):
     def select_action(self, observation, agents):
         print(observation) # TODO remove this
         action_type = self.control_type
-        targets = {agent: np.argmin(observation[agent].get('Q')) for agent in agents}
+
+
+        targets = {agent:
+                       np.argmin(observation[agent]['Q'][:observation[agent]["numberOfNeighbours"]])
+                   for agent in agents}
 
         return targets, action_type
 

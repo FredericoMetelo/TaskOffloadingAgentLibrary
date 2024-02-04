@@ -2,6 +2,7 @@ import math
 import random
 
 import numpy as np
+import peersim_gym.envs.PeersimEnv
 
 from src.ControlAlgorithms.ControlAlgorithm import ControlAlgorithm
 from src.Utils import utils as fl
@@ -32,7 +33,7 @@ class RandomControlAlgorithm(ControlAlgorithm):
 
     def select_action(self, observation, agents):
         action = {
-            agent: random.randint(a=0, b=len(observation[agent]['Q']) if len(observation[agent]['Q']) > 0 else 0)
+            agent: random.randint(a=0, b=observation[agent][peersim_gym.envs.PeersimEnv.STATE_NO_NEIGHBOURS] - 1 if observation[agent][peersim_gym.envs.PeersimEnv.STATE_NO_NEIGHBOURS] > 0 else 1)
             for agent in agents
         }
         action_type = self.control_type
