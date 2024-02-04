@@ -92,9 +92,11 @@ class DDQNAgentMARL(Agent):
         if warm_up_file is not None:
             self.warm_up(warm_up_file, env.possible_agents)
 
-        # if load_weights is not None: # Not implemented for MARL yet.
-        #     self.Q_values[agent].load_checkpoint(load_weights)
-        #     self.target_Q_values[agent].load_checkpoint(load_weights)
+        if load_weights is not None: # Not implemented for MARL yet.
+            for idx, agent in enumerate(env.possible_agents):
+                agent_w = load_weights + f"_{agent}.pth.tar"
+                self.Q_values[agent].load_checkpoint(agent_w)
+                self.target_Q_values[agent].load_checkpoint(agent_w)
 
         for i in range(num_episodes):
             # Prepare variables for the next run

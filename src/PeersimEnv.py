@@ -88,7 +88,7 @@ if __name__ == '__main__':
     # log_dir='logs/'
     log_dir = None
 
-    env = PeersimEnv(configs=config_dict, render_mode="human", simtype="basic", log_dir=log_dir, randomize_seed=True)
+    env = PeersimEnv(configs=config_dict, render_mode="ascii", simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
 
 
@@ -118,7 +118,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 10
+    num_episodes = 500
 
     # For plotting metrics
     all_epochs = []
@@ -136,19 +136,19 @@ if __name__ == '__main__':
 
         # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
         # NN ==========================================================================
-        # agent = DDQNAgentMARL(input_shape=shape_obs_flat,
-        #                   output_shape=max_neighbours,
-        #                   action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
-        #                   batch_size=500,
-        #                   epsilon_start=1.0,
-        #                   epsilon_decay=(1.0 - 0.3) / (999 * 500),
-        #                   epsilon_end=0.3,
-        #                   gamma=0.99,
-        #                   save_interval=100,
-        #                   update_interval=300,
-        #                   learning_rate=0.00001,
-        #                   agents=env.possible_agents,
-        #                   )
+        agent = DDQNAgentMARL(input_shape=shape_obs_flat,
+                          output_shape=max_neighbours,
+                          action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
+                          batch_size=500,
+                          epsilon_start=1.0,
+                          epsilon_decay=(1.0 - 0.3) / (999 * 500),
+                          epsilon_end=0.3,
+                          gamma=0.99,
+                          save_interval=100,
+                          update_interval=300,
+                          learning_rate=0.00001,
+                          agents=env.possible_agents,
+                          )
 
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
@@ -159,12 +159,12 @@ if __name__ == '__main__':
         #                  steps_for_return=150,
         #                  learning_rate=0.00001)
         #
-        # warm_up_file = None
-        # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
+        warm_up_file = None
+        # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         # load_weights = None
-        # # load_weights = "./models/DDQN_Q_value_300.pth.tar"
-        # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-        #                  load_weights=load_weights, results_file="./OutputData/DQN_results_mult.cvs")
+        load_weights = "./models/DDQN_Q_value_400"
+        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
+                         load_weights=load_weights, results_file="./OutputData/DQN_results_mult.cvs")
 
         # Baselines ===================================================================
 
