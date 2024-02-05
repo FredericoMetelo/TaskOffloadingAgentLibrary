@@ -68,6 +68,7 @@ class MetricHelper:
 
         self._aux_average_reward += step_reward / len(self.agents)
 
+        self.average_response_time_per_episode = average_response_time
         self.__update_buckets(self.overloaded_nodes_per_episode, overloaded_nodes)
         self.__update_buckets(self.occupancy_per_episode, occupancy)
         return
