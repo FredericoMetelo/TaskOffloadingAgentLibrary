@@ -118,7 +118,7 @@ if __name__ == '__main__':
     epsilon = 0.1
     train = 100
     test = 1
-    num_episodes = 500
+    num_episodes = 201
 
     # For plotting metrics
     all_epochs = []
@@ -162,26 +162,26 @@ if __name__ == '__main__':
         warm_up_file = None
         # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         # load_weights = None
-        load_weights = "./models/DDQN_Q_value_400"
+        load_weights = "./models/DDQN_Q_value_500"
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-                         load_weights=load_weights, results_file="./OutputData/DQN_results_mult.cvs")
+                         load_weights=load_weights, results_file="./OutputData/DQN_results_mult")
 
         # Baselines ===================================================================
 
         lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
                                  output_shape=max_neighbours,
                                  action_space=env.action_space("worker_0"),
-                                 collect_data=True,
+                                 collect_data=False,
                                  agents=env.possible_agents,
                                  file_name="least_queue",
-                                    plot_name="least_queue"
+                                 plot_name="least_queue"
                                  )
         lq.execute_simulation(env, num_episodes, print_instead=False)
 
         rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
                                       output_shape=max_neighbours,
                                       action_space=env.action_space("worker_0"),
-                                      collect_data=True,
+                                      collect_data=False,
                                       agents=env.possible_agents,
                                       file_name="random",
                                       plot_name="random"
@@ -192,7 +192,7 @@ if __name__ == '__main__':
                               output_shape=max_neighbours,
                               action_space=env.action_space("worker_0"),
                               agents=env.possible_agents,
-                              collect_data=True,
+                              collect_data=False,
                               file_name="always_local",
                               plot_name="always_local"
                               )
