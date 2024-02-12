@@ -46,7 +46,7 @@ def print_all_csv(dir="./Plots/"):
 
 
 controllers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]  #
-config_dict = ch.generate_config_dict(expected_occupancy=0.8,
+config_dict = ch.generate_config_dict(expected_occupancy=0.5,
                                       controllers=controllers,
                                       # Simulation Parameters
                                       size=30,
@@ -57,17 +57,18 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
 
                                       nodes_per_layer=[10, 10, 10],
                                       cloud_access=[0, 0, 0],
-                                      freqs_per_layer=[4e7, 2e7, 8e7],
-                                      no_cores_per_layer=[1, 1, 2],
+                                      freqs_per_layer=[64e7, 32e7, 64e7],
+                                      no_cores_per_layer=[8, 8, 16],
                                       q_max_per_layer=[20, 10, 100],
                                       variations_per_layer=[0, 0, 0],
 
                                       task_probs=[1],
                                       task_sizes=[150],
-                                      task_instr=[8e7],
+                                      task_instr=[32e7],
                                       task_CPI=[1],
                                       task_deadlines=[100],
-                                      target_time_for_occupancy=0.5,
+                                      target_time_for_occupancy=1,
+                                      layersThatGetTasks=[0],
 
                                       comm_B=2,
                                       comm_Beta1=0.001,
@@ -116,9 +117,7 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 0.99
     epsilon = 0.1
-    train = 100
-    test = 1
-    num_episodes = 500
+    num_episodes = 3
 
     # For plotting metrics
     all_epochs = []
@@ -136,19 +135,19 @@ if __name__ == '__main__':
 
         # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
         # NN ==========================================================================
-        # agent = DDQNAgentMARL(input_shape=shape_obs_flat,
-        #                   output_shape=max_neighbours,
-        #                   action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
-        #                   batch_size=500,
-        #                   epsilon_start=1.0,
-        #                   epsilon_decay=(1.0 - 0.3) / (999 * 500),
-        #                   epsilon_end=0.3,
-        #                   gamma=0.99,
-        #                   save_interval=100,
-        #                   update_interval=300,
-        #                   learning_rate=0.00001,
-        #                   agents=env.possible_agents,
-        #                   )
+        agent = DDQNAgentMARL(input_shape=shape_obs_flat,
+                          output_shape=max_neighbours,
+                          action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
+                          batch_size=500,
+                          epsilon_start= 0.1, #  1.0,
+                          epsilon_decay=(1.0 - 0.3) / (999 * 500),
+                          epsilon_end=0.1,
+                          gamma=0.99,
+                          save_interval=100,
+                          update_interval=300,
+                          learning_rate=0.00001,
+                          agents=env.possible_agents,
+                          )
 
 
         # agent = A2CAgent(input_shape=shape_obs_flat,
@@ -159,41 +158,41 @@ if __name__ == '__main__':
         #                  steps_for_return=150,
         #                  learning_rate=0.00001)
         #
-        # warm_up_file = None
+        warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         # # load_weights = None
-        # load_weights = "./models/DDQN_Q_value_400"
-        # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-        #                  load_weights=load_weights, results_file="./OutputData/DQN_results_mult.cvs")
+        load_weights = "./models/DDQN_Q_value_200"
+        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
+                         load_weights=load_weights, results_file="./OutputData/DDQN_result")
 
         # Baselines ===================================================================
-
+        #
         lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
                                  output_shape=max_neighbours,
                                  action_space=env.action_space("worker_0"),
                                  collect_data=False,
                                  agents=env.possible_agents,
-                                 file_name="least_queue",
-                                    plot_name="least_queue"
+                                 file_name="./OutputData/least_queue",
+                                 plot_name="least_queue"
                                  )
         lq.execute_simulation(env, num_episodes, print_instead=False)
-
+        #
         rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
                                       output_shape=max_neighbours,
                                       action_space=env.action_space("worker_0"),
                                       collect_data=False,
                                       agents=env.possible_agents,
-                                      file_name="random",
+                                      file_name="./OutputData/random",
                                       plot_name="random"
                                       )
         rand.execute_simulation(env, num_episodes, print_instead=False)
-
+        #
         nothing = AlwaysLocal(input_shape=shape_obs_flat,
                               output_shape=max_neighbours,
                               action_space=env.action_space("worker_0"),
                               agents=env.possible_agents,
                               collect_data=False,
-                              file_name="always_local",
+                              file_name="./OutputData/always_local",
                               plot_name="always_local"
                               )
         nothing.execute_simulation(env, num_episodes, print_instead=False)

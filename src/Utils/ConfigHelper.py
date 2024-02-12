@@ -109,6 +109,7 @@ def generate_config_dict(controllers="[0]",
                          no_cores_per_layer=[4],
                          q_max_per_layer=[50],
                          variations_per_layer=[0],
+                         layersThatGetTasks=[0],
 
                          task_probs=[1],
                          task_sizes=[150],
@@ -172,15 +173,15 @@ def generate_config_dict(controllers="[0]",
         "protocol.clt.CPI": to_string_array(task_CPI),
         "protocol.clt.T": to_string_array(task_sizes),
         "protocol.clt.I": to_string_array(task_instr),
-        "protocol.clt.taskArrivalRate": str(taskArrivalForOccupancy(expected_occupancy, np.array(task_probs), np.array(total_cpu_cycles),
-                                                                avg_neighbours, simulation_time*target_time_for_occupancy,
-                                                                total_cpu_cycles[0], q_max_per_layer[0])),
+        "protocol.clt.taskArrivalRate": str(expected_occupancy),
 
         "protocol.clt.numberOfDAG": "1",
         "protocol.clt.dagWeights": "1",
         "protocol.clt.edges": "",
         "protocol.clt.maxDeadline": to_string_array(task_deadlines),
         "protocol.clt.vertices": "1",
+        "protocol.clt.layersThatGetTasks": to_string_array(layersThatGetTasks),
+
 
         "protocol.props.B": str(comm_B),
         "protocol.props.Beta1": str(comm_Beta1),
@@ -196,6 +197,9 @@ def generate_config_dict(controllers="[0]",
     }
     return configs
 
+# taskArrivalForOccupancy(expected_occupancy, np.array(task_probs), np.array(total_cpu_cycles),
+#                                                                 avg_neighbours, simulation_time*target_time_for_occupancy,
+#                                                                 total_cpu_cycles[0], q_max_per_layer[0])
 
 def make_ctr(ctrs_list):
 

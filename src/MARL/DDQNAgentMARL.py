@@ -129,11 +129,11 @@ class DDQNAgentMARL(Agent):
                 states = next_states
 
                 # Learn
-                last_losses = []
+                last_losses = {agent: 0 for agent in agent_list}
                 for agent in agent_list:
                     last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
                                            s_next=self.new_state_memory, k=step, fin=self.terminal_memory, agent=agent)
-                    last_losses.append(last_loss)
+                    last_losses[agent] = last_loss if not last_loss is None else 0
 
                 print(f'Action(e:{self.epsilon}) {actions}  -   Loss: {last_losses}  -    Rewards: {rewards}')
 
@@ -143,11 +143,14 @@ class DDQNAgentMARL(Agent):
 
                 step += 1
                 self.mh.update_metrics_after_step(rewards=rewards,
-                                                  losses={agent: last_loss if not last_loss is None else 0 for agent in
-                                                          env.agents},
+                                                  losses=last_losses,
                                                   overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
                                                   average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
-                                                  occupancy=info[pg.STATE_G_OCCUPANCY])
+                                                  occupancy=info[pg.STATE_G_OCCUPANCY],
+                                                  dropped_tasks=info[pg.STATE_G_DROPPED_TASKS],
+                                                  finished_tasks=info[pg.STATE_G_FINISHED_TASKS],
+                                                  total_tasks=info[pg.STATE_G_TOTAL_TASKS])
+
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
                                                                              self.mh.episode_average_reward(i)))
