@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     try:
         cores = 4
-        for i in [0.0005, 0.005, 0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2]:
+        for i in [1.0]: # 0.0005, 0.005, 0.01, 0.05, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0
             for cores in [2, 4, 8, 16]:
                 expected_occupancy = i
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
                                                       nodes_per_layer=[10, 10, 10],
                                                       cloud_access=[0, 0, 0],
-                                                      freqs_per_layer=[64e7, 32e7, 64e7],
+                                                      freqs_per_layer=[16e7, 8e7, 64e7],
                                                       no_cores_per_layer=[cores, cores, cores*2],
                                                       q_max_per_layer=[20, 10, 100],
                                                       variations_per_layer=[0, 0, 0],
@@ -109,7 +109,7 @@ if __name__ == '__main__':
                                                       )
 
 
-                # log_dir='logs/'
+                    # log_dir='logs/'
                 log_dir = None
 
                 env = PeersimEnv(configs=config_dict, render_mode="ascii", simtype="basic", log_dir=log_dir,
@@ -162,15 +162,15 @@ if __name__ == '__main__':
 
                 # Baselines ===================================================================
                 #
-                # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
-                #                          output_shape=max_neighbours,
-                #                          action_space=env.action_space("worker_0"),
-                #                          collect_data=False,
-                #                          agents=env.possible_agents,
-                #                          file_name=f"./OutputData/StateSpaceExploration/least_queue_c{cores}_oc{expected_occupancy}",
-                #                          plot_name="least_queue"
-                #                          )
-                # lq.execute_simulation(env, num_episodes, print_instead=False)
+                lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
+                                         output_shape=max_neighbours,
+                                         action_space=env.action_space("worker_0"),
+                                         collect_data=False,
+                                         agents=env.possible_agents,
+                                         file_name=f"./OutputData/StateSpaceExploration/least_queue_c{cores}_oc{expected_occupancy}",
+                                         plot_name="least_queue"
+                                         )
+                lq.execute_simulation(env, num_episodes, print_instead=False)
                 #
                 # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
                 #                               output_shape=max_neighbours,
@@ -181,17 +181,17 @@ if __name__ == '__main__':
                 #                               plot_name="random"
                 #                               )
                 # rand.execute_simulation(env, num_episodes, print_instead=False)
-                #
-                nothing = AlwaysLocal(input_shape=shape_obs_flat,
-                                      output_shape=max_neighbours,
-                                      action_space=env.action_space("worker_0"),
-                                      agents=env.possible_agents,
-                                      collect_data=False,
-                                      file_name=f"./OutputData/StateSpaceExploration/always_local_c{cores}_oc{expected_occupancy}",
-                                      plot_name="always_local"
-                                      )
-                nothing.execute_simulation(env, num_episodes, print_instead=False)
-                env.close()
+                # #
+                # nothing = AlwaysLocal(input_shape=shape_obs_flat,
+                #                       output_shape=max_neighbours,
+                #                       action_space=env.action_space("worker_0"),
+                #                       agents=env.possible_agents,
+                #                       collect_data=False,
+                #                       file_name=f"./OutputData/StateSpaceExploration/always_local_c{cores}_oc{expected_occupancy}",
+                #                       plot_name="always_local"
+                #                       )
+                # nothing.execute_simulation(env, num_episodes, print_instead=False)
+                # env.close()
 
                 sleep(1)
                 print("Training finished.\n")

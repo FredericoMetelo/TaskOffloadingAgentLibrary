@@ -1,5 +1,7 @@
 import math
 
+import peersim_gym.envs.PeersimEnv
+
 from src.ControlAlgorithms.ControlAlgorithm import ControlAlgorithm
 import numpy as np
 from src.Utils import utils as fl
@@ -31,7 +33,8 @@ class LeastQueueAlgorithm(ControlAlgorithm):
 
 
         targets = {agent:
-                       np.argmin(observation[agent]['Q'][:observation[agent]["numberOfNeighbours"]])
+                       # np.argmin(observation[agent]['Q'][:observation[agent]["numberOfNeighbours"]])
+                        np.argmax(observation[agent][peersim_gym.envs.PeersimEnv.STATE_FREE_SPACES_FIELD][:observation[agent]["numberOfNeighbours"]])
                    for agent in agents}
 
         return targets, action_type
