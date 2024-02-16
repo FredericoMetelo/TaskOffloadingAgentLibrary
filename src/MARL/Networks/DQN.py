@@ -38,27 +38,27 @@ class DQN(nn.Module):
         torch.nn.init.kaiming_normal_(self.fc11.weight, nonlinearity='leaky_relu')
         self.bn11 = nn.BatchNorm1d(self.fc1_dims)
 
-        self.fc12 = nn.Linear(self.fc1_dims, self.fc1_dims)
-        torch.nn.init.kaiming_normal_(self.fc12.weight, nonlinearity='leaky_relu')
-        self.bn12 = nn.BatchNorm1d(self.fc1_dims)
+        # self.fc12 = nn.Linear(self.fc1_dims, self.fc1_dims)
+        # torch.nn.init.kaiming_normal_(self.fc12.weight, nonlinearity='leaky_relu')
+        # self.bn12 = nn.BatchNorm1d(self.fc1_dims)
 
         # L2
         self.fc21 = nn.Linear(self.fc1_dims, self.fc2_dims)
         torch.nn.init.kaiming_normal_(self.fc21.weight, nonlinearity='leaky_relu')
         self.bn21 = nn.BatchNorm1d(self.fc2_dims)
 
-        self.fc22 = nn.Linear(self.fc2_dims, self.fc2_dims)
-        torch.nn.init.kaiming_normal_(self.fc22.weight, nonlinearity='leaky_relu')
-        self.bn22 = nn.BatchNorm1d(self.fc2_dims)
+        # self.fc22 = nn.Linear(self.fc2_dims, self.fc2_dims)
+        # torch.nn.init.kaiming_normal_(self.fc22.weight, nonlinearity='leaky_relu')
+        # self.bn22 = nn.BatchNorm1d(self.fc2_dims)
 
         #L3
         self.fc31 = nn.Linear(self.fc2_dims, self.fc3_dims)
         torch.nn.init.kaiming_normal_(self.fc31.weight, nonlinearity='leaky_relu')
         self.bn31 = nn.BatchNorm1d(self.fc3_dims)
 
-        self.fc32 = nn.Linear(self.fc3_dims, self.fc3_dims)
-        torch.nn.init.kaiming_normal_(self.fc32.weight, nonlinearity='leaky_relu')
-        self.bn32 = nn.BatchNorm1d(self.fc3_dims)
+        # self.fc32 = nn.Linear(self.fc3_dims, self.fc3_dims)
+        # torch.nn.init.kaiming_normal_(self.fc32.weight, nonlinearity='leaky_relu')
+        # self.bn32 = nn.BatchNorm1d(self.fc3_dims)
 
         #L4
         # self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
@@ -80,11 +80,11 @@ class DQN(nn.Module):
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
         layer11 = F.leaky_relu(self.fc11(state))
-        layer12 = F.leaky_relu(self.fc12(layer11))
-        layer21 = F.leaky_relu(self.fc21(layer12))
-        layer22 = F.leaky_relu(self.fc22(layer21))
-        layer31 = F.leaky_relu(self.fc31(layer22))
-        last = F.leaky_relu(self.fc32(layer31))
+        # layer12 = F.leaky_relu(self.fc12(layer11))
+        layer21 = F.leaky_relu(self.fc21(layer11))
+        # layer22 = F.leaky_relu(self.fc22(layer21))
+        last = F.leaky_relu(self.fc31(layer21))
+        # last = F.leaky_relu(self.fc32(layer31))
         # layer4 = F.relu(self.bn4(self.fc4(layer3)))
         q_values = self.out(last)  # TODO
 
