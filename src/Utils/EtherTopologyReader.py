@@ -76,6 +76,7 @@ def get_topology_data(filename="SimpleNetwork_data.json", project_coordinates=Fa
     freqs_per_layer_array = []
     no_cores_per_layer_array = []
     variations_per_layer_array = []
+    controllers = []
 
     # I need to build two Strings in the format Peersim accepts. Firstly, I need to build the
     # node positions string, with format
@@ -102,6 +103,8 @@ def get_topology_data(filename="SimpleNetwork_data.json", project_coordinates=Fa
         nodes_per_layer.append(1)
         if "rpi3" in key: # TODO: This is a temporary solution.
             layers_that_get_tasks.append(idx)
+        if "rpi3" in key or "nuc" in key:
+            controllers.append(str(idx))
 
     node_positions = node_positions[:-1]  # Clip the last ";"
     node_processing_powers = node_processing_powers[:-1]
@@ -142,6 +145,7 @@ def get_topology_data(filename="SimpleNetwork_data.json", project_coordinates=Fa
         "q_max_per_layer_array": q_max_per_layer_array,
         "freqs_per_layer_array": freqs_per_layer_array,
         "no_cores_per_layer_array": no_cores_per_layer_array,
-        "variations_per_layer_array": variations_per_layer_array
+        "variations_per_layer_array": variations_per_layer_array,
+        "controllers": controllers,
     }
     return result_dict

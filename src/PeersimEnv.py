@@ -61,7 +61,7 @@ manual_cores_array = topology_dict["no_cores_per_layer_array"]
 manual_variations = topology_dict["variations_per_layer_array"]
 manual_positions = topology_dict["positions"]
 manual_topology = topology_dict["topology"]
-controllers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+controllers = topology_dict["controllers"] #  ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
 
 config_dict = ch.generate_config_dict(expected_occupancy=0.5,
                                       controllers=controllers,
@@ -119,7 +119,10 @@ if __name__ == '__main__':
     log_dir='logs/'
     # log_dir = None
 
-    env = PeersimEnv(configs=config_dict, render_mode="ascii", simtype="basic", log_dir=log_dir, randomize_seed=True)
+    # render_mode = "ascii"
+    render_mode = "human"
+
+    env = PeersimEnv(configs=config_dict, render_mode=render_mode, simtype="basic", log_dir=log_dir, randomize_seed=True)
     env.reset()
 
 
@@ -169,7 +172,7 @@ if __name__ == '__main__':
                           output_shape=max_neighbours,
                           action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
                           batch_size=500,
-                          epsilon_start= 0.1, #  1.0,
+                          epsilon_start=1.0,
                           epsilon_decay=(1.0 - 0.3) / (999 * 500),
                           epsilon_end=0.1,
                           gamma=0.99,
@@ -190,8 +193,8 @@ if __name__ == '__main__':
         #
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-        # # load_weights = None
-        load_weights = "./models/DDQN_Q_value_200"
+        load_weights = None
+        # load_weights = "./models/DDQN_Q_value_200"
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                          load_weights=load_weights, results_file="./OutputData/DDQN_result")
 

@@ -21,7 +21,7 @@ def flatten_observation(observation):
     flat_Q = observation.get(pe.STATE_Q_FIELD)
     w = observation.get(pe.STATE_PROCESSING_POWER_FIELD)
     flat_w = np.array(w).flatten()
-    flat_free = observation.get(pe.STATE_PROCESSING_POWER_FIELD)
+    flat_free = observation.get(pe.STATE_FREE_SPACES_FIELD)
     x = np.concatenate((flat_Q, flat_free, flat_n_i, flat_w), axis=0)
     return x
 
