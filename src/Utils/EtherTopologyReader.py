@@ -16,9 +16,9 @@ def get_projection_info(node_dict):
     #                  X             Y
     min_coords = [float("inf"), float("inf")]
     max_coords = [-float("inf"), -float("inf")]
-    for node in node_dict:
-        x = node[coordinates_key][0]
-        y = node[coordinates_key][1]
+    for node in node_dict.values():
+        x = node["coordinates"][0]
+        y = node["coordinates"][1]
         if x < min_coords[0]:
             min_coords[0] = x
         if y < min_coords[1]:
@@ -68,49 +68,80 @@ def get_topology_data(filename="SimpleNetwork_data.json", project_coordinates=Fa
     node_processing_powers = ""
     node_cores = ""
     node_memories = ""
+    node_number = len(node_dict)
+    layer_number = node_number
+    nodes_per_layer = []
+    layers_that_get_tasks = []
+    q_max_per_layer_array = []
+    freqs_per_layer_array = []
+    no_cores_per_layer_array = []
+    variations_per_layer_array = []
+
     # I need to build two Strings in the format Peersim accepts. Firstly, I need to build the
     # node positions string, with format
-    for idx, node in enumerate(node_dict):
+    for idx, key in enumerate(node_dict.keys()):
+        node = node_dict[key]
         id_consultation_dict[node["id"]] = idx
-        x = project_x(node[coordinates_key][0], min_coords, max_coords, project_coordinates)
-        y = project_y(node[coordinates_key][1], min_coords, max_coords, project_coordinates)
+        x = project_x(node["coordinates"][0], min_coords, max_coords, project_coordinates=project_coordinates)
+        y = project_y(node["coordinates"][1], min_coords, max_coords, project_coordinates=project_coordinates)
         node_positions += f"{x},{y};"
-        node_processing_powers += f"{node[capacity_key][processing_power_key]};"
-        node_memories += f"{node[capacity_key][processing_power_key]};"
+
+        freq = node['capacity'][processing_power_key]
+        node_processing_powers += f"{freq};"
+        freqs_per_layer_array.append(freq)
+
+        q_max = int(round(node['capacity'][memory_key]/expected_task_size)) if expected_task_size > 0 else node['capacity'][memory_key]
+        node_memories += f"{q_max};"
+        q_max_per_layer_array.append(q_max)
+
         node_cores += f"1;"
+        no_cores_per_layer_array.append(1)
+
+        variations_per_layer_array.append(0)
+
+        nodes_per_layer.append(1)
+        if "rpi3" in key: # TODO: This is a temporary solution.
+            layers_that_get_tasks.append(idx)
+
     node_positions = node_positions[:-1]  # Clip the last ";"
     node_processing_powers = node_processing_powers[:-1]
     node_cores = node_cores[:-1]
     node_memories = node_memories[:-1]
 
     link_topology = ""
-    neighbours_dict = {id_consultation_dict[k]: [] for k in id_consultation_dict.keys()}
-    for link in link_dict["link_info"]:
-        # Problem... The links still include all the slop from the original topology that is not agnostic to the
-        # networking infrastructure. I need to figure out how to build a neighbourhood. This is dependent in tomorrows'
-        # implementation of a better topology. I'll still implement this as if the links beteween the nodes are all
-        # direct links.
-        # TODO Make this method robust, it's naive right now... because the current topology is not agnostic to the
-        #  networking infrastructure.
-        source = id_consultation_dict[link["source"]]
-        target = id_consultation_dict[link["target"]]
-        if source not in neighbours_dict[target]:
-            neighbours_dict[target].append(source)
-        if target not in neighbours_dict[source]:
-            neighbours_dict[source].append(target)
+    neighbours_per_node = {id_consultation_dict[k]: [] for k in id_consultation_dict.keys()}
+    neighbours = link_dict["neighbours"]
+    link_info = link_dict["path_info"]
+    for node in neighbours.keys():
+        # Note: A concern I have is that the current neighbourhoods basically are the clusters of nodes
+        # that form around the city. I'm still not sure the positions are correct though. Will confirm in a while.
+        neighbourhood = neighbours[node]
+        source = id_consultation_dict[int(node)]
+        for neighbour in neighbourhood:
+            target = id_consultation_dict[neighbour]
+            if source not in neighbours_per_node[target]:
+                neighbours_per_node[target].append(source)
+            if target not in neighbours_per_node[source]:
+                neighbours_per_node[source].append(target)
 
     link_topology = ""
-    for key in sorted(neighbours_dict.keys()):
-        value = neighbours_dict[key]
-        link_topology += f"{key}:" + ",".join([str(x) for x in value]) + ";"
+    for key in sorted(neighbours_per_node.keys()):
+        value = neighbours_per_node[key]
+        link_topology += f"{key}," + ",".join([str(x) for x in value]) + ";"
     link_topology = link_topology[:-1]
     result_dict = {
         "positions": node_positions,
         "memories": node_memories,
         "processing_powers": node_processing_powers,
         "cores": node_cores,
-        "topology": link_topology
-
+        "topology": link_topology,
+        "number_of_layers": layer_number,
+        "number_of_nodes": node_number,
+        "nodes_per_layer": nodes_per_layer,
+        "layers_that_get_tasks": layers_that_get_tasks,
+        "q_max_per_layer_array": q_max_per_layer_array,
+        "freqs_per_layer_array": freqs_per_layer_array,
+        "no_cores_per_layer_array": no_cores_per_layer_array,
+        "variations_per_layer_array": variations_per_layer_array
     }
-
     return result_dict
