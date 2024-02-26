@@ -203,7 +203,7 @@ if __name__ == '__main__':
         lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
                                  output_shape=max_neighbours,
                                  action_space=env.action_space("worker_0"),
-                                 collect_data=False,
+                                  collect_data=False,
                                  agents=env.possible_agents,
                                  file_name="./OutputData/least_queue",
                                  plot_name="least_queue"

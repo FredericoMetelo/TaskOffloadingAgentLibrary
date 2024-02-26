@@ -63,12 +63,17 @@ def getNodes(topology) -> List[Node]:
 
 def run_experiment(topology: Topology, neighbours: Dict[Node, List[Node]]):
     all_nodes = getNodes(topology)
-    shuffled_indices = list(range(len(all_nodes)))
-    random.shuffle(shuffled_indices)
+    # shuffled_indices = list(range(len(all_nodes)))
+    # random.shuffle(shuffled_indices)
+    #
+    # # Separate the list into two parts
+    # anchor_list = [all_nodes[i] for i in shuffled_indices[:3]]  # Bad solution? Yes. Do I care? Yes... ;_;
+    # nodes_list = [all_nodes[i] for i in shuffled_indices[3:]]
 
-    # Separate the list into two parts
-    anchor_list = [all_nodes[i] for i in shuffled_indices[:3]]  # Bad solution? Yes. Do I care? Yes... ;_;
-    nodes_list = [all_nodes[i] for i in shuffled_indices[3:]]
+    server_node = [x for x in all_nodes if hasattr(x, "name") and "server" in x.name or "nuc" in x.name]
+    # Add servers to anchors, remove servers from node_list
+    anchor_list = server_node
+    nodes_list = [x for x in all_nodes if x not in anchor_list]
 
     coordinates = execute(topology, anchors=anchor_list, nodes=nodes_list, neighbours=neighbours)
 
