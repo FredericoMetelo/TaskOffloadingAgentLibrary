@@ -18,6 +18,7 @@ from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.Utils import utils as fl
 from src.Utils import ConfigHelper as ch
+from src.Utils import RewardShapingHelper as rshelper
 import traceback
 
 import torch as T
@@ -83,8 +84,11 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       RANDOMIZEPOSITIONS=False,
                                       POSITIONS="15.55895350495783,17.02475796027715;47.56499372388999,57.28732691557995;5.366872150976409,43.28729893321355;17.488160666668694,29.422819514162434;81.56549175388358,53.14564532018814;85.15660881172089,74.47408014762478;18.438454887921974,44.310130148722195;72.04311826903107,62.06952644109185;25.60125368295145,15.54795598202745;17.543669122835837,70.7258178169151",
                                       TOPOLOGY="0,1,2,3,6,8;1,0,2,3,4,5,6,7,8,9;2,0,1,3,6,8,9;3,0,1,2,6,8,9;4,1,5,7;5,1,4,7;6,0,1,2,3,8,9;7,1,4,5;8,0,1,2,3,6;9,1,2,3,6")
+
+
 wait_on_fail = False
 if __name__ == '__main__':
+
 
     log_dir='logs/'
     # log_dir = None
@@ -92,7 +96,11 @@ if __name__ == '__main__':
     # render_mode = "ascii"
     render_mode = "human"
 
-    env = PeersimEnv(configs=config_dict, render_mode=render_mode, simtype="basic", log_dir=log_dir, randomize_seed=True)
+    # phy_rs_term = None
+    phy_rs_term = rshelper.mean_relative_load
+
+
+    env = PeersimEnv(configs=config_dict, render_mode=render_mode, simtype="basic", log_dir=log_dir, randomize_seed=True, phy_rs_term=phy_rs_term)
     env.reset()
 
 
@@ -108,6 +116,7 @@ if __name__ == '__main__':
     flat_obs = fl.flatten_observation(obs.sample())
     shape_obs_flat = np.shape(flat_obs)
 
+    # test_var = phy_rs_term(obs)
     max_neighbours = env.max_neighbours
 
     action = env.action_space("worker_0")
