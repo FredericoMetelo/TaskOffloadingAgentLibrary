@@ -223,7 +223,7 @@ def execute(topology: Topology, anchors: List[Node], nodes: List[Node], neighbou
             hi = 0
             for idx, anchor in enumerate(Anchors):
                 a_idx = map_anchor_int[anchor]
-                hi += w[i]  - PBa(w[i], ak[a_idx], rij[i][idx])
+                hi += w[i] - PBa(w[i], ak[a_idx], rij[i][idx])
             x[k-2][i] = x[k-1][i]
             x[k-1][i] = x[k][i]
             x[k][i] = w[i] - (1 / Lf)*(gi + hi)
