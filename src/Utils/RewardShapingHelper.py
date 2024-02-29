@@ -16,5 +16,6 @@ def mean_relative_load(partial_state: Space):
     obs_qs = np.array(partial_state[pe.STATE_Q_FIELD])
     total_q =(obs_qs + obs_fs)
     obs_qs_normalized = obs_qs / total_q
+    variance = np.var(obs_qs_normalized)
     curr_q = partial_state[pe.STATE_QSIZE_FIELD]/total_q[0]
-    return max(0, curr_q - np.sum(obs_qs_normalized) / np.shape(obs_qs_normalized)[0])
+    return max(0, np.sum(obs_qs_normalized) / np.shape(obs_qs_normalized)[0])
