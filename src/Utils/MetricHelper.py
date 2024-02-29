@@ -1,5 +1,5 @@
 import csv
-
+import peersim_gym.envs.PeersimEnv as pe
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -54,6 +54,7 @@ class MetricHelper:
         self.average_loss = []
 
         self.density_of_actions = {agent: {} for agent in agents}
+        self.density_of_actions_history = []
 
         self.num_episodes = num_episodes
         self.num_nodes = num_nodes
@@ -245,4 +246,18 @@ class MetricHelper:
             csv_writer.writerows(r_rows)
 
         # Example usage remains the same
+
+    def register_actions(self, actions):
+        for worker, action in actions.items():
+            self.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)
+        return
+    def reset_action_density(self):
+        self.density_of_actions_history.append(self.density_of_actions)
+        self.density_of_actions = {agent: {} for agent in self.agents}
+        return
+    def print_action_density_episode(self):
+        for agent in self.agents:
+            print(f"Agent {agent} action density: {self.density_of_actions[agent]}")
+        self.reset_action_density()
+        return
 

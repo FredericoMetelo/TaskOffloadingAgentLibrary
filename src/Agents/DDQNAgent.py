@@ -102,7 +102,7 @@ class DDQNAgent(Agent):
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
-                self.tally_actions(actions)
+                # self.tally_actions(actions)
 
                 next_states, rewards, dones, _, info = env.step(actions)
                 next_states = utils.flatten_state_list(next_states, agent_list)
@@ -275,6 +275,6 @@ class DDQNAgent(Agent):
         self.Q_value.save_checkpoint(filename="warm_up_Q_value.pth.tar", epoch=-1)
         print("Warm up complete")
 
-    def tally_actions(self, actions):
-        for worker, action in actions.items():
-            self.mh.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)
+    # def tally_actions(self, actions):
+    #     for worker, action in actions.items():
+    #         self.mh.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)

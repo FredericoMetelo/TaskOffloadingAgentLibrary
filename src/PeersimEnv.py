@@ -60,7 +60,7 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       cloud_access=[0, 0, 0],
                                       freqs_per_layer=[2e7, 2e7, 2e7],
                                       no_cores_per_layer=[1, 1, 1],
-                                      q_max_per_layer=[50, 50, 50],
+                                      q_max_per_layer=[8, 8, 8],
                                       variations_per_layer=[0, 0, 0],
                                       layersThatGetTasks=[1],
 

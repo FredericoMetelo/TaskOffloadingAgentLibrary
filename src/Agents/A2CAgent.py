@@ -91,14 +91,15 @@ class A2CAgent(Agent):
 
                 self.mh.update_metrics_after_step(rewards=rewards, losses={agent: 0 for agent in env.agents},
                                                   overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
-                                                  average_response_time=info[
-                                                      pg.STATE_G_AVERAGE_COMPLETION_TIMES],
+                                                  average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
                                                   occupancy=info[pg.STATE_G_OCCUPANCY])
+                self.mh.register_actions(actions)
             if i % self.save_interval == 0:
                 self.Q_value.save_checkpoint(filename=f"DDQN_Q_value_{i}.pth.tar", epoch=i)
 
             # Update final metrics
             self.mh.compile_aggregate_metrics(i, step)
+            self.mh.print_action_density_episode()
 
         self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type,
                                    print_instead=print_instead)

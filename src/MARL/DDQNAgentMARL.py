@@ -116,7 +116,8 @@ class DDQNAgentMARL(Agent):
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
-                self.tally_actions(actions)
+                # self.tally_actions(actions)
+                self.mh.register_actions(actions)
 
                 next_states, rewards, dones, _, info = env.step(actions)
                 next_states = utils.flatten_state_list(next_states, agent_list)
@@ -151,6 +152,7 @@ class DDQNAgentMARL(Agent):
                                                   finished_tasks=info[pg.STATE_G_FINISHED_TASKS],
                                                   total_tasks=info[pg.STATE_G_TOTAL_TASKS])
 
+            self.mh.print_action_density_episode()
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
                                                                              self.mh.episode_average_reward(i)))
