@@ -134,7 +134,8 @@ def generate_config_dict(controllers="[0]",
                          MANUAL_CONFIG=False,
                          MANUAL_CORES="1",
                          MANUAL_FREQS="1e7",
-                         MANUAL_QMAX="10"
+                         MANUAL_QMAX="10",
+                         clientLayers="0"
                         ):
     if size != sum(nodes_per_layer):
         raise Exception("Size and sum of nodes per layer must be equal")
@@ -202,7 +203,7 @@ def generate_config_dict(controllers="[0]",
         "MANUAL_CORES": MANUAL_CORES,
         "MANUAL_FREQS": MANUAL_FREQS,
         "MANUAL_QMAX": MANUAL_QMAX,
-
+        "clientLayers": clientLayers,
 
     }
     return configs
