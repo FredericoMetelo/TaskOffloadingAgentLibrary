@@ -168,10 +168,10 @@ def generate_config_dict(controllers="[0]",
 
         "init.Net1.r": str(radius),
 
-        "protocol.mng.r_u": str(weight_utility),
-        "protocol.mng.X_d": str(weight_delay),
+        "utility_reward": weight_utility,
+        "delay_weight": weight_delay,
+        "overload_weight": weight_overload,
 
-        "protocol.mng.X_o": str(weight_overload),
         "protocol.mng.cycle": str(frequency_of_action),
 
         "protocol.clt.numberOfTasks": str(len(task_probs)),
@@ -203,7 +203,7 @@ def generate_config_dict(controllers="[0]",
         "MANUAL_CORES": MANUAL_CORES,
         "MANUAL_FREQS": MANUAL_FREQS,
         "MANUAL_QMAX": MANUAL_QMAX,
-        "clientLayers": clientLayers,
+        "clientLayers": to_string_array(clientLayers),
 
         "protocol.clt.defaultCPUWorkload": "100000000",
         "protocol.clt.defaultMemoryWorkload": "100",

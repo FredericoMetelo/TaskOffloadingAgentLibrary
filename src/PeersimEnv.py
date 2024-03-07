@@ -63,9 +63,10 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       q_max_per_layer=[8, 8, 8],
                                       variations_per_layer=[0, 0, 0],
                                       layersThatGetTasks=[1],
+                                      clientLayers=[1],
 
                                       task_probs=[1],
-                                      task_sizes=[150],
+                                      task_sizes=[50],
                                       task_instr=[32e7],
                                       task_CPI=[1],
                                       task_deadlines=[100],
@@ -77,8 +78,9 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       comm_Power=20,
 
                                       weight_utility=10,
-                                      weight_delay=1,
-                                      weight_overload=150,
+
+                                      weight_delay={"exec": 2, "comm": 3, "queue": 1, "global": 1},
+                                      weight_overload=2,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
                                       POSITIONS="15.55895350495783,17.02475796027715;47.56499372388999,57.28732691557995;5.366872150976409,43.28729893321355;17.488160666668694,29.422819514162434;81.56549175388358,53.14564532018814;85.15660881172089,74.47408014762478;18.438454887921974,44.310130148722195;72.04311826903107,62.06952644109185;25.60125368295145,15.54795598202745;17.543669122835837,70.7258178169151",
@@ -91,8 +93,8 @@ wait_on_fail = False
 if __name__ == '__main__':
 
 
-    # simtype = "basic"
-    simtype = "basic-workload"
+    simtype = "basic"
+    # simtype = "basic-workload"
 
     log_dir='logs/'
     # log_dir = None
@@ -140,14 +142,14 @@ if __name__ == '__main__':
     all_penalties = []
     try:
         # Manual Debugging ============================================================
-        # manual = ManualSelection(input_shape=shape_obs_flat,
-        #                          output_shape=max_neighbours,
-        #                          action_space=env.action_space("worker_0"),
-        #                          collect_data=True,
-        #                          agents=env.possible_agents,
-        #                          file_name="manual"
-        #                          )
-        # manual.execute_simulation(env, num_episodes, print_instead=False)
+        manual = ManualSelection(input_shape=shape_obs_flat,
+                                 output_shape=max_neighbours,
+                                 action_space=env.action_space("worker_0"),
+                                 collect_data=True,
+                                 agents=env.possible_agents,
+                                 file_name="manual"
+                                 )
+        manual.execute_simulation(env, num_episodes, print_instead=False)
 
         # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
         # NN ==========================================================================
@@ -155,7 +157,7 @@ if __name__ == '__main__':
                               output_shape=max_neighbours,
                               action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
                               batch_size=500,
-                              epsilon_start=0.10,
+                              epsilon_start=01.0,
                               epsilon_decay=(1.0 - 0.3) / (999 * 100),
                               epsilon_end=0.1,
                               gamma=0.99,
