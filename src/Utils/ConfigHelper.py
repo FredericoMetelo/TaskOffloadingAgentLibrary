@@ -205,6 +205,9 @@ def generate_config_dict(controllers="[0]",
         "MANUAL_QMAX": MANUAL_QMAX,
         "clientLayers": clientLayers,
 
+        "protocol.clt.defaultCPUWorkload": "100000000",
+        "protocol.clt.defaultMemoryWorkload": "100",
+        "protocol.clt.workloadPath": "/home/fm/IdeaProjects/peersim-environment/Datasets/alibaba_trace_cleaned.json",
     }
     return configs
 
