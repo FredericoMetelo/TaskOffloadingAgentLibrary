@@ -58,14 +58,15 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
 
                                       nodes_per_layer=[1, 1, 8],
                                       cloud_access=[0, 0, 0],
-                                      freqs_per_layer=[2e7, 2e7, 2e7],
+                                      freqs_per_layer=[4e7, 2e7, 2e7],
                                       no_cores_per_layer=[1, 1, 1],
                                       q_max_per_layer=[8, 8, 8],
                                       variations_per_layer=[0, 0, 0],
                                       layersThatGetTasks=[1],
+                                      clientLayers=[1],
 
                                       task_probs=[1],
-                                      task_sizes=[150],
+                                      task_sizes=[50],
                                       task_instr=[32e7],
                                       task_CPI=[1],
                                       task_deadlines=[100],
@@ -77,7 +78,8 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
                                       comm_Power=20,
 
                                       weight_utility=10,
-                                      weight_delay=1,
+
+                                      weight_delay={"exec": 2, "comm": 3, "queue": 1, "global": 1},
                                       weight_overload=2,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
@@ -96,8 +98,8 @@ wait_on_fail = False
 if __name__ == '__main__':
 
 
-    # simtype = "basic"
     simtype = "basic"
+    # simtype = "basic-workload"
 
     log_dir='logs/'
     # log_dir = None
@@ -112,6 +114,14 @@ if __name__ == '__main__':
     env = PeersimEnv(configs=config_dict, render_mode=render_mode, simtype=simtype, log_dir=log_dir, randomize_seed=True, phy_rs_term=phy_rs_term)
     env.reset()
 
+
+    # TODO The agent is still broken. Right now it keeps offloading to sub-optimal nodes. I believe It's not due to
+    #  the reward. It can get better rewards (less punish) in another nodes. But the agent just laser focuses on one
+    #  node, usually a bad option, made worse by the insistance of the agent on overloading the node in question. I
+    #  have messed around with distance between the nodes, and I believe the problem isn't there. Will have to move
+    #  to acessing where in the agent or the interaction loop is the problem. Pay special attention to the states +
+    #  the actions being taken, check if there is no offset, the states are the ones the agent should observe.
+    #  Confirm the reward is being properly computed.
 
     obs = env.observation_space("worker_0")
     flat_obs = fl.flatten_observation(obs.sample())
@@ -130,7 +140,7 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 0.99
     epsilon = 0.1
-    num_episodes = 500
+    num_episodes = 100
 
     # For plotting metrics
     all_epochs = []
