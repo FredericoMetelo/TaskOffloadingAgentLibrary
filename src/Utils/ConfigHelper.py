@@ -134,7 +134,10 @@ def generate_config_dict(controllers="[0]",
                          MANUAL_CONFIG=False,
                          MANUAL_CORES="1",
                          MANUAL_FREQS="1e7",
-                         MANUAL_QMAX="10"
+                         MANUAL_QMAX="10",
+                         defaultCPUWorkload="2.4e+9",
+                         defaultMemoryWorkload="100",
+                         workloadPath=None
                         ):
     if size != sum(nodes_per_layer):
         raise Exception("Size and sum of nodes per layer must be equal")
@@ -203,9 +206,9 @@ def generate_config_dict(controllers="[0]",
         "MANUAL_FREQS": MANUAL_FREQS,
         "MANUAL_QMAX": MANUAL_QMAX,
 
-        "protocol.clt.defaultCPUWorkload": "100000000",
-        "protocol.clt.defaultMemoryWorkload": "100",
-        "protocol.clt.workloadPath": "/home/fm/IdeaProjects/peersim-environment/Datasets/alibaba_trace_cleaned.json",
+        "protocol.clt.defaultCPUWorkload": defaultCPUWorkload,
+        "protocol.clt.defaultMemoryWorkload": defaultMemoryWorkload,
+        "protocol.clt.workloadPath": workloadPath,
     }
     return configs
 

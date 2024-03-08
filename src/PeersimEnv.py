@@ -78,11 +78,16 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
 
                                       weight_utility=10,
                                       weight_delay=1,
-                                      weight_overload=150,
+                                      weight_overload=2,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
                                       POSITIONS="15.55895350495783,17.02475796027715;47.56499372388999,57.28732691557995;5.366872150976409,43.28729893321355;17.488160666668694,29.422819514162434;81.56549175388358,53.14564532018814;85.15660881172089,74.47408014762478;18.438454887921974,44.310130148722195;72.04311826903107,62.06952644109185;25.60125368295145,15.54795598202745;17.543669122835837,70.7258178169151",
-                                      TOPOLOGY="0,1,2,3,6,8;1,0,2,3,4,5,6,7,8,9;2,0,1,3,6,8,9;3,0,1,2,6,8,9;4,1,5,7;5,1,4,7;6,0,1,2,3,8,9;7,1,4,5;8,0,1,2,3,6;9,1,2,3,6")
+                                      TOPOLOGY="0,1,2,3,6,8;1,0,2,3,4,5,6,7,8,9;2,0,1,3,6,8,9;3,0,1,2,6,8,9;4,1,5,7;5,1,4,7;6,0,1,2,3,8,9;7,1,4,5;8,0,1,2,3,6;9,1,2,3,6",
+                                      workloadPath="/home/fm/IdeaProjects/peersim-environment/Datasets/alibaba_trace_cleaned.json",
+                                      defaultCPUWorkload="2.4e+9",
+                                      defaultMemoryWorkload="100"
+
+                                      )
 
 
 
@@ -92,7 +97,7 @@ if __name__ == '__main__':
 
 
     # simtype = "basic"
-    simtype = "basic-workload"
+    simtype = "basic"
 
     log_dir='logs/'
     # log_dir = None
@@ -107,14 +112,6 @@ if __name__ == '__main__':
     env = PeersimEnv(configs=config_dict, render_mode=render_mode, simtype=simtype, log_dir=log_dir, randomize_seed=True, phy_rs_term=phy_rs_term)
     env.reset()
 
-
-    # TODO The agent is still broken. Right now it keeps offloading to sub-optimal nodes. I believe It's not due to
-    #  the reward. It can get better rewards (less punish) in another nodes. But the agent just laser focuses on one
-    #  node, usually a bad option, made worse by the insistance of the agent on overloading the node in question. I
-    #  have messed around with distance between the nodes, and I believe the problem isn't there. Will have to move
-    #  to acessing where in the agent or the interaction loop is the problem. Pay special attention to the states +
-    #  the actions being taken, check if there is no offset, the states are the ones the agent should observe.
-    #  Confirm the reward is being properly computed.
 
     obs = env.observation_space("worker_0")
     flat_obs = fl.flatten_observation(obs.sample())
@@ -133,7 +130,7 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 0.99
     epsilon = 0.1
-    num_episodes = 100
+    num_episodes = 500
 
     # For plotting metrics
     all_epochs = []
@@ -155,13 +152,13 @@ if __name__ == '__main__':
                               output_shape=max_neighbours,
                               action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
                               batch_size=500,
-                              epsilon_start=0.10,
+                              epsilon_start=1.0,
                               epsilon_decay=(1.0 - 0.3) / (999 * 100),
                               epsilon_end=0.1,
                               gamma=0.99,
                               save_interval=99,
                               update_interval=300,
-                              learning_rate=0.00001,
+                              learning_rate=0.0001,
                               agents=env.possible_agents,
                               )
 
@@ -176,8 +173,8 @@ if __name__ == '__main__':
         #
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-        # load_weights = None
-        load_weights = "./models/DDQN_Q_value_495"
+        load_weights = None
+        # load_weights = "./models/DDQN_Q_value_495"
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                          load_weights=load_weights, results_file="./OutputData/DDQN_result")
 
