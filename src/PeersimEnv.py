@@ -58,7 +58,7 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.8,
 
                                       nodes_per_layer=[1, 1, 8],
                                       cloud_access=[0, 0, 0],
-                                      freqs_per_layer=[2e7, 2e7, 2e7],
+                                      freqs_per_layer=[4e7, 2e7, 2e7],
                                       no_cores_per_layer=[1, 1, 1],
                                       q_max_per_layer=[8, 8, 8],
                                       variations_per_layer=[0, 0, 0],
@@ -194,7 +194,7 @@ if __name__ == '__main__':
         #                          plot_name="least_queue"
         #                          )
         # lq.execute_simulation(env, num_episodes, print_instead=False)
-        # #
+        #
         # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
         #                               output_shape=max_neighbours,
         #                               action_space=env.action_space("worker_0"),
