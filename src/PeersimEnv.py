@@ -135,6 +135,7 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.5,
 
                                       cloud_access=[0, 0, 0],
 
+
                                       freqs_per_layer=manual_freqs_array,
                                       no_cores_per_layer=manual_cores_array,
                                       q_max_per_layer=manual_qmax_array,
@@ -153,7 +154,7 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.5,
 
                                       # layersThatGetTasks=[0],
                                       layersThatGetTasks=manual_layers_that_get_tasks,
-
+                                      clientLayers=manual_layers_that_get_tasks,
                                       comm_B=2,
                                       comm_Beta1=0.001,
                                       comm_Beta2=4,
