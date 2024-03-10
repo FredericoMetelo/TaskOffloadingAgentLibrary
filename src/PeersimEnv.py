@@ -98,8 +98,8 @@ wait_on_fail = False
 if __name__ == '__main__':
 
 
-    simtype = "basic"
-    # simtype = "basic-workload"
+    # simtype = "basic"
+    simtype = "basic-workload"
 
     log_dir='logs/'
     # log_dir = None

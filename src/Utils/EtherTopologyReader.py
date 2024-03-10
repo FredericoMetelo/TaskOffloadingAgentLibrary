@@ -1,3 +1,12 @@
+"""
+Usage:
+To add tour own ether topology to PeersimGym, you must add the code that is in the Agent repository in the folder
+"src/Utils/EtherTopologyGeneration" to the ether repository and run the "examples/MyNet.py". This will generate a .json
+file, which should be moved back to the root of the agents repository. A topology for PeersimGym can then be generated
+with the EtherTopologyReader.py and the values obtained feed to the config helper for PeersimGym to use the geneated
+topology, the Readme.md in the PeersimGym repository has more information on how to do this. TODO actually add the information.
+"""
+
 import json
 
 processing_power_key = 'cpu_milis'
