@@ -135,7 +135,13 @@ def generate_config_dict(controllers="[0]",
                          MANUAL_CORES="1",
                          MANUAL_FREQS="1e7",
                          MANUAL_QMAX="10",
+<<<<<<< HEAD
+                         defaultCPUWorkload="2.4e+9",
+                         defaultMemoryWorkload="100",
+                         workloadPath=None
+=======
                          clientLayers="0"
+>>>>>>> 897ab28488f735421c45c69b5c955c45843074af
                         ):
     if size != sum(nodes_per_layer):
         raise Exception("Size and sum of nodes per layer must be equal")
@@ -168,10 +174,10 @@ def generate_config_dict(controllers="[0]",
 
         "init.Net1.r": str(radius),
 
-        "protocol.mng.r_u": str(weight_utility),
-        "protocol.mng.X_d": str(weight_delay),
+        "utility_reward": weight_utility,
+        "delay_weight": weight_delay,
+        "overload_weight": weight_overload,
 
-        "protocol.mng.X_o": str(weight_overload),
         "protocol.mng.cycle": str(frequency_of_action),
 
         "protocol.clt.numberOfTasks": str(len(task_probs)),
@@ -203,15 +209,11 @@ def generate_config_dict(controllers="[0]",
         "MANUAL_CORES": MANUAL_CORES,
         "MANUAL_FREQS": MANUAL_FREQS,
         "MANUAL_QMAX": MANUAL_QMAX,
-<<<<<<< HEAD
-        "clientLayers": clientLayers,
+        "clientLayers": to_string_array(clientLayers),
 
-=======
-
-        "protocol.clt.defaultCPUWorkload": "100000000",
-        "protocol.clt.defaultMemoryWorkload": "100",
-        "protocol.clt.workloadPath": "/home/fm/IdeaProjects/peersim-environment/Datasets/alibaba_trace_cleaned.json",
->>>>>>> 1f2b4c4cc79f7d79507cca2ae393052221af9ccc
+        "protocol.clt.defaultCPUWorkload": defaultCPUWorkload,
+        "protocol.clt.defaultMemoryWorkload": defaultMemoryWorkload,
+        "protocol.clt.workloadPath": workloadPath,
     }
     return configs
 

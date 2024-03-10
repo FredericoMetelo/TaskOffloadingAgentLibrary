@@ -66,11 +66,13 @@ class DDQNAgentMARL(Agent):
 
         self.Q_values = {}
         self.target_Q_values = {}
+        self.action_shape = output_shape
         for agent in self.possible_agents:
+            rank = output_shape[agent]
             self.Q_values[agent] = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256, fc3_dims=128,
-                                       n_actions=self.action_shape)
+                                       n_actions=rank)
             self.target_Q_values[agent] = DQN(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256,
-                                              fc3_dims=128, n_actions=self.action_shape)
+                                              fc3_dims=128, n_actions=rank)
             self.target_Q_values[agent].load_state_dict(self.Q_values[agent].state_dict())
 
         self.save_interval = save_interval
@@ -267,12 +269,12 @@ class DDQNAgentMARL(Agent):
         :return:
         """
         if pre_train_policy:
-            return np.random.choice(self.actions)
+            return np.random.choice(self.actions[agent])
 
         # In this case, we are using a epsilon-greedy policy
         if np.random.random() < self.epsilon:
             print(f"(R) Exploring ({self.epsilon})")
-            action = np.random.choice(self.actions)
+            action = np.random.choice(self.actions[agent])
         else:
             print("(T) Exploiting")
             #  We need to set the network to evaluation mode, because we are only predicting the action for one state,
