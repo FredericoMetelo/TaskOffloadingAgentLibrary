@@ -100,7 +100,7 @@ def getIdFromAgent(agent):
 #TTE%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 #ETS%%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-topology_file = "/home/fm/PycharmProjects/TaskOffloadingAgentLibrary/SimpleNetwork_data_long_run.json"
+topology_file = "./etherTopologies/one_cluste_8rpi_manual.json"
 topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
 
 manual_config = True
@@ -186,8 +186,8 @@ if __name__ == '__main__':
     # simtype = "basic"
     simtype = "basic-workload"
 
-    log_dir='logs/'
-    # log_dir = None
+    # log_dir='logs/'
+    log_dir = None
 
     # render_mode = "ascii"
     render_mode = "human"
@@ -270,8 +270,8 @@ if __name__ == '__main__':
         #
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-        # load_weights = None
-        load_weights = "./models/DDQN_Q_value_99"
+        load_weights = None
+        # load_weights = "./models/DDQN_Q_value_99"
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                          load_weights=load_weights, results_file="./OutputData/DDQN_result_ether")
 
