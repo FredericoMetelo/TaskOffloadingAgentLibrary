@@ -49,6 +49,18 @@ def project_y(y, min_coords, max_coords, scale=100, project_coordinates=False):
     return (y - min_coords[1]) / (max_coords[1] - min_coords[1]) * scale
 
 
+def validate_coordinates(x, y, coord_dict):
+    if (x, y) in coord_dict:
+        print("DEBUG: There was a hit, two nodes are overlapping.")
+        return validate_coordinates(x + 1, y + 1, coord_dict)
+    else:
+
+        coord_dict[(x, y)] = True
+        return x, y
+
+
+
+
 def get_topology_data(filename="SimpleNetwork_data.json", project_coordinates=False, expected_task_size=-1):
     """
     This method reads the topology from the file filename json file and returns a dictionary with the following
@@ -87,16 +99,16 @@ def get_topology_data(filename="SimpleNetwork_data.json", project_coordinates=Fa
     variations_per_layer_array = []
     controllers = []
 
-    # I need to build two Strings in the format Peersim accepts. Firstly, I need to build the
-    # node positions string, with format
+    coord_dict = {}  # Laughs in 32 gb of ram and yet another datastructure
     for idx, key in enumerate(node_dict.keys()):
         node = node_dict[key]
         id_consultation_dict[node["id"]] = idx
         x = project_x(node["coordinates"][0], min_coords, max_coords, project_coordinates=project_coordinates)
         y = project_y(node["coordinates"][1], min_coords, max_coords, project_coordinates=project_coordinates)
+        x, y = validate_coordinates(x, y, coord_dict)
         node_positions += f"{x},{y};"
 
-        freq = node['capacity'][processing_power_key]
+        freq = node['capacity'][processing_power_key]*1000  # instructions in #CPU cycles/millisecond, we wish seconds
         node_processing_powers += f"{freq};"
         freqs_per_layer_array.append(freq)
 
@@ -155,6 +167,7 @@ def get_topology_data(filename="SimpleNetwork_data.json", project_coordinates=Fa
         "freqs_per_layer_array": freqs_per_layer_array,
         "no_cores_per_layer_array": no_cores_per_layer_array,
         "variations_per_layer_array": variations_per_layer_array,
+        "client_layers": layers_that_get_tasks,
         "controllers": controllers,
     }
     return result_dict

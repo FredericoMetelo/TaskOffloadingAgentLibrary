@@ -138,8 +138,9 @@ def generate_config_dict(controllers="[0]",
                          clientLayers="0",
                          defaultCPUWorkload="2.4e+9",
                          defaultMemoryWorkload="100",
-                         workloadPath=None
-                        ):
+                         workloadPath=None,
+                         clientIsSelf=1
+                         ):
     if size != sum(nodes_per_layer):
         raise Exception("Size and sum of nodes per layer must be equal")
     # Press the green button in the gutter to run the script.
@@ -190,6 +191,7 @@ def generate_config_dict(controllers="[0]",
         "protocol.clt.maxDeadline": to_string_array(task_deadlines),
         "protocol.clt.vertices": "1",
         "protocol.clt.layersThatGetTasks": to_string_array(layersThatGetTasks),
+        "protocol.clt.clientIsSelf": str(clientIsSelf),
 
 
         "protocol.props.B": str(comm_B),

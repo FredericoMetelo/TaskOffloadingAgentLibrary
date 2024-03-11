@@ -106,6 +106,7 @@ topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, e
 manual_config = True
 manual_no_layers = topology_dict["number_of_layers"]
 manual_layers_that_get_tasks = topology_dict["layers_that_get_tasks"]
+manual_clientLayers = topology_dict["client_layers"]
 manual_no_nodes = topology_dict["number_of_nodes"]
 manual_nodes_per_layer = topology_dict["nodes_per_layer"]
 manual_freqs = topology_dict["processing_powers"]
@@ -154,14 +155,14 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.5,
 
                                       # layersThatGetTasks=[0],
                                       layersThatGetTasks=manual_layers_that_get_tasks,
-                                      clientLayers=manual_layers_that_get_tasks,
+                                      clientLayers=manual_clientLayers,
                                       comm_B=2,
                                       comm_Beta1=0.001,
                                       comm_Beta2=4,
                                       comm_Power=20,
 
                                       weight_utility=10,
-                                      weight_delay={"exec": 2, "comm": 3, "queue": 1, "global": 1},
+                                      weight_delay={"exec": 10, "comm": 10, "queue": 1, "global": 1},
                                       weight_overload=2,
                                       RANDOMIZETOPOLOGY=False,
                                       RANDOMIZEPOSITIONS=False,
@@ -170,7 +171,8 @@ config_dict = ch.generate_config_dict(expected_occupancy=0.5,
                                       MANUAL_CONFIG=manual_config,
                                       workloadPath="/home/fm/IdeaProjects/peersim-environment/Datasets/alibaba_trace_cleaned.json",
                                       defaultCPUWorkload="2.4e+9",
-                                      defaultMemoryWorkload="100"
+                                      defaultMemoryWorkload="100",
+                                      clientIsSelf=1
                                       )
 
 #ETE%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
@@ -223,7 +225,7 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 0.99
     epsilon = 0.1
-    num_episodes = 500
+    num_episodes = 200
 
     # For plotting metrics
     all_epochs = []
@@ -268,8 +270,8 @@ if __name__ == '__main__':
         #
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-        load_weights = None
-        # load_weights = "./models/DDQN_Q_value_495"
+        # load_weights = None
+        load_weights = "./models/DDQN_Q_value_99"
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                          load_weights=load_weights, results_file="./OutputData/DDQN_result_ether")
 
