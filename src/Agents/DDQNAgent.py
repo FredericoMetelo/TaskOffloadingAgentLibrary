@@ -30,7 +30,7 @@ class DDQNAgent(Agent):
 
     """
 
-    def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=10000, epsilon_start=0.7,
+    def __init__(self, input_shape, action_space, output_shape, batch_size, memory_max_size=500, epsilon_start=0.7,
                  epsilon_decay=5e-4, gamma=0.7, epsilon_end=0.01, update_interval=150, learning_rate=0.7,
                  collect_data=False, save_interval=50, control_type="DQN"):
         super().__init__(input_shape, action_space, output_shape, memory_max_size, collect_data=collect_data)
