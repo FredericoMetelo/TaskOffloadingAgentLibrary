@@ -1,7 +1,10 @@
+from re import T
+
 import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from torchsummary import summary
 
+import torch as T
 from src.Agents.Agent import Agent
 from src.Agents.Networks.A2C import ActorCritic
 from src.Utils import utils
@@ -17,14 +20,16 @@ class A2CAgent(Agent):
     """
 
     def __init__(self, input_shape, action_space, output_shape, agents, learning_rate=0.7, gamma=0.4, steps_for_return=150,
-                 control_type="A2C"):
-        super().__init__(input_shape, action_space, output_shape, learning_rate)
+                 collect_data=False, save_interval=50, control_type="A2C"):
+        super().__init__(input_shape, action_space, output_shape, learning_rate, collect_data=collect_data)
         self.gamma = gamma
         self.control_type = control_type
 
         self.A2C = ActorCritic(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
                                n_actions=self.actions)
+
         summary(self.A2C, input_size=self.input_shape)
+
         self.agent_states = {
             agent: {
                 'state': [],
@@ -35,13 +40,18 @@ class A2CAgent(Agent):
             } for agent in agents
         }
 
-    def train_loop(self, env: PeersimEnv, num_episodes, print_instead=False, controllers=None):
+    def train_loop(self, env: PeersimEnv, num_episodes, print_instead=False, controllers=None, warm_up_file=None, load_weights=None,
+                   results_file=None):
         super().train_loop(env, num_episodes, print_instead, controllers)
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         steps_per_return = 5
+        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
+                     file_name=results_file)
 
-        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes)
+        if load_weights:
+            self.A2C.load_checkpoint(load_weights)
+
         for i in range(num_episodes):
             # Prepare variables for the next run
             dones = [False for _ in controllers]
@@ -81,12 +91,15 @@ class A2CAgent(Agent):
 
                 self.mh.update_metrics_after_step(rewards=rewards, losses={agent: 0 for agent in env.agents},
                                                   overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
-                                                  average_response_time=info[
-                                                      pg.STATE_G_AVERAGE_COMPLETION_TIMES],
+                                                  average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
                                                   occupancy=info[pg.STATE_G_OCCUPANCY])
+                self.mh.register_actions(actions)
+            if i % self.save_interval == 0:
+                self.Q_value.save_checkpoint(filename=f"DDQN_Q_value_{i}.pth.tar", epoch=i)
 
             # Update final metrics
             self.mh.compile_aggregate_metrics(i, step)
+            self.mh.print_action_density_episode()
 
         self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type,
                                    print_instead=print_instead)
@@ -98,10 +111,15 @@ class A2CAgent(Agent):
         self.A2C.optimizer.zero_grad()
         loss = self.A2C.calculate_loss(fin)
         loss.backward()
+        self.A2C.optimizer.step()
         self.A2C.clear_memory()
 
     def get_action(self, observation):
-        return self.A2C.choose_action(observation)
+        self.A2C.eval()
+        with T.no_grad():
+            action = self.A2C.choose_action(observation)
+        self.A2C.train()
+        return action
 
     def __store_agent_step_data(self, states, actions, rewards, next_states, dones, agent_list):
         total_rwrd = 0

@@ -1,37 +1,109 @@
+import csv
+import peersim_gym.envs.PeersimEnv as pe
 import matplotlib.pyplot as plt
 import numpy as np
 
 
 class MetricHelper:
-    def __init__(self, agents, num_nodes, num_episodes):
+    def __init__(self, agents, num_nodes, num_episodes, file_name):
+
+        #
         self.reward_per_agent = {}
-        self.reward_per_agent_history = {agent: [] for agent in agents}         
+        self.reward_per_agent_history = {agent: [] for agent in agents} # This is what is used to save the episode info, it's built using reward_per_agent. It saves data for the whole episode.
 
         self.loss_per_agent = {}
         self.loss_per_agent_history = {agent: [] for agent in agents}
 
+        # This will store the number of times each of the nodes was overloaded in one episode. Meaning that if we have
+        # three nodes, node 0 overloads in all steps, node 1 in the last two, and node 2 in the first two, the array
+        # will be [3, 2, 2].
         self.overloaded_nodes_per_episode = np.zeros(num_nodes)
+
+        # This will store the number of overloaded nodes per step for all episodes.
         self.overloaded_nodes_history = []
 
+        # This will store the average occupancy for each time-step in one episode. It works the same way as
+        # overloaded_nodes_per_episode. This metric is kinda stupid not going to lie... Need to measure the relative
+        # occupancy. Meaning, instead of having averaging the occupancies, I should get a metric that tells me how
+        # balanced the network node is. Btw, occupancy is the percentage of fullness of each node (Q/Q_max).
+
         self.occupancy_per_episode = np.zeros(num_nodes)
+        # This will store the average occupancy for each time-step in all episodes.
         self.occupancy_history = []
 
+
+        # This will store the average response time for each client at each time-step in one episode.
+        # Tbf, should not be initialized with the size of the number of nodes, but it is replaced later...
         self.average_response_time_per_episode = np.zeros(num_nodes)
+        # ^ This is stupid, I keep the average response time per node in the simulation. Therefore, all I need is the
+        # last entry. Instead of saving the buckets here, I'll just substitute it for the last entry in the list.
         self.average_response_time_history = []
+
+        self.tasks_dropped_per_episode = np.zeros(num_nodes)
+        self.tasks_dropped_history = []
+
+        self.tasks_finished_per_episode = np.zeros(num_nodes)
+        self.tasks_finished_history = []
+
+        self.tasks_total_per_episode = np.zeros(num_nodes)
+        self.tasks_total_history = []
+
 
         self.average_rewards = []
         self._aux_average_reward = 0
         self.average_loss = []
 
+        self.density_of_actions = {agent: {} for agent in agents}
+        self.density_of_actions_history = []
+
         self.num_episodes = num_episodes
         self.num_nodes = num_nodes
         self.agents = agents
+        self.file_name = file_name
+
+    def update_metrics_after_step(self, rewards, losses, overloaded_nodes, average_response_time, occupancy, dropped_tasks, finished_tasks, total_tasks):
+        """
+        This method is used to save the metrics after each step of the simulation.
+        :param rewards:
+        :param losses:
+        :param overloaded_nodes:
+        :param average_response_time:
+        :param occupancy:
+        :return:
+        """
+        step_reward = 0
+        for agent in self.agents:
+            self.reward_per_agent[agent] = self.reward_per_agent.get(agent, []) + [rewards[agent]]
+            self.loss_per_agent[agent] = self.loss_per_agent.get(agent, []) + [losses[agent]]
+            step_reward += rewards[agent]
+
+        self._aux_average_reward += step_reward / len(self.agents)
+
+        self.average_response_time_per_episode = average_response_time
+        self.tasks_finished_per_episode = finished_tasks
+        self.tasks_dropped_per_episode = dropped_tasks
+        self.tasks_total_per_episode = total_tasks
+        self.__update_buckets(self.overloaded_nodes_per_episode, overloaded_nodes)
+        self.__update_buckets(self.occupancy_per_episode, occupancy)
+        return
 
     def compile_aggregate_metrics(self, episode, no_steps):
+        """
+        This method is used to compile the metrics for the episode and save them in the "permanent memory storage", it
+        also cleans the temporary storage for the next episode.
+        :param episode:
+        :param no_steps:
+        :return:
+        """
 
+        # Move the buckets for each step to the history
         self.occupancy_history.append(np.array(self.occupancy_per_episode) / no_steps)
-        self.average_response_time_history.append(np.array(self.average_response_time_per_episode) / no_steps)
+        self.average_response_time_history.append(np.array(self.average_response_time_per_episode))
         self.overloaded_nodes_history.append(np.array(self.overloaded_nodes_per_episode))
+
+        self.tasks_finished_history.append(np.array(self.tasks_finished_per_episode))
+        self.tasks_dropped_history.append(np.array(self.tasks_dropped_per_episode))
+        self.tasks_total_history.append(np.array(self.tasks_total_per_episode))
 
         for agent in self.agents:
             self.reward_per_agent_history[agent].append(self.reward_per_agent[agent])
@@ -41,22 +113,11 @@ class MetricHelper:
 
         self.__reset_step_metrics()
 
+    def register_action(self, action, agent):
+        self.density_of_actions[agent][action] = self.density_of_actions[agent].get(action, 0) + 1
+
     def episode_average_reward(self, episode=-1):
         return self.average_rewards[episode]
-
-    def update_metrics_after_step(self, rewards, losses, overloaded_nodes, average_response_time, occupancy):
-        step_reward = 0
-        for agent in self.agents:
-            self.reward_per_agent[agent] = self.reward_per_agent.get(agent, []) + [rewards[agent]]
-            self.loss_per_agent[agent] = self.loss_per_agent.get(agent, []) + [losses[agent]]
-            step_reward += rewards[agent]
-
-        self._aux_average_reward += step_reward / len(self.agents)
-
-        self.__update_buckets(self.overloaded_nodes_per_episode, overloaded_nodes)
-        self.__update_buckets(self.occupancy_per_episode, occupancy)
-        self.__update_buckets(self.average_response_time_per_episode, average_response_time)
-        return
 
     def __reset_step_metrics(self):
         self.reward_per_agent = {}
@@ -65,6 +126,9 @@ class MetricHelper:
         self.overloaded_nodes_per_episode = np.zeros(self.num_nodes)
         self.average_response_time_per_episode = np.zeros(self.num_nodes)
         self.occupancy_per_episode = np.zeros(self.num_nodes)
+        self.tasks_finished_per_episode = np.zeros(self.num_nodes)
+        self.tasks_dropped_per_episode = np.zeros(self.num_nodes)
+        self.tasks_total_per_episode = np.zeros(self.num_nodes)
 
     def __update_buckets(self, buckets, data):
         for i in range(len(data)):
@@ -92,8 +156,10 @@ class MetricHelper:
             ax[1].plot(x, agent_mean_loss, label=agent)
 
         if print_instead:
+            print(f"Saving plot plt_train_metrics_{title}")
             plt.savefig(f"./Plots/plt_train_metrics_{title}")
         else:
+            print(f"Showing plot {title}")
             plt.show()
 
     def plot_simulation_data(self, num_episodes, title='default', print_instead=False, csv_dump=True):
@@ -120,8 +186,10 @@ class MetricHelper:
         if title != 'default':
             plt.title(title)
         if print_instead:
+            print(f"Saving plot plt_sim_data_{title}")
             plt.savefig(f"./Plots/plt_sim_data_{title}")
         else:
+            print(f"Showing plot {title}")
             plt.show()
 
         if csv_dump:
@@ -136,3 +204,60 @@ class MetricHelper:
     def clean_plt_resources(self):
         plt.close('all')
         return
+
+    def store_as_cvs(self, file_name):
+        print(f"Storing as csv {file_name}")
+        r_headers = []
+        headers = []
+        r_rows = []
+        rows = []
+
+
+        for agent in self.agents:
+            r_headers.extend([f"{agent}_loss", f"{agent}_reward"])
+
+        # First file with results:
+        headers.extend(["overloaded", "occupancy", "response_time", "tasks_dropped", "tasks_finished", "tasks_total"])
+
+        for i in range(len(self.occupancy_history)):
+            row_data = {}
+            r_row_data = {}
+            for agent in self.reward_per_agent_history.keys():
+                r_row_data[f"{agent}_loss"] = self.loss_per_agent_history[agent][i]
+                r_row_data[f"{agent}_reward"] = self.reward_per_agent_history[agent][i]
+            row_data["overloaded"] = self.overloaded_nodes_history[i]
+            row_data["occupancy"] = self.occupancy_history[i]
+            row_data["response_time"] = self.average_response_time_history[i]
+            row_data["tasks_finished"] = self.tasks_finished_history[i]
+            row_data["tasks_dropped"] = self.tasks_dropped_history[i]
+            row_data["tasks_total"] = self.tasks_total_history[i]
+
+            rows.append(row_data)
+            r_rows.append(r_row_data)
+
+        with open(f"{file_name}_metrics", 'w', newline='') as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=headers, lineterminator='\n')
+            csv_writer.writeheader()
+            csv_writer.writerows(rows)
+
+        with open(f"{file_name}_rewards", 'w', newline='') as csv_file:
+            csv_writer = csv.DictWriter(csv_file, fieldnames=r_headers, lineterminator='\n')
+            csv_writer.writeheader()
+            csv_writer.writerows(r_rows)
+
+        # Example usage remains the same
+
+    def register_actions(self, actions):
+        for worker, action in actions.items():
+            self.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)
+        return
+    def reset_action_density(self):
+        self.density_of_actions_history.append(self.density_of_actions)
+        self.density_of_actions = {agent: {} for agent in self.agents}
+        return
+    def print_action_density_episode(self):
+        for agent in self.agents:
+            print(f"Agent {agent} action density: {self.density_of_actions[agent]}")
+        self.reset_action_density()
+        return
+

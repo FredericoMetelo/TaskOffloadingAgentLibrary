@@ -47,7 +47,8 @@ class ControlAlgorithm:
     def execute_simulation(self, env, num_episodes, print_instead=True):
         """ The name of this method is train_model exclusively for compatibility reasons, when running shallow models
         this will effectively not train anything"""
-        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes)
+        self.result_file=self.file_name + '_result'
+        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,file_name=self.result_file)
         for i in range(num_episodes):
             done = [False for _ in env.agents]
             score = 0.0
@@ -69,14 +70,18 @@ class ControlAlgorithm:
                 state = new_state
                 self.mh.update_metrics_after_step(rewards=reward, losses={agent: 0 for agent in env.agents},
                                                 overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
-                                                average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
-                                                occupancy=info[pg.STATE_G_OCCUPANCY])
+                                                average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES], # Note: This are per client and not per node.
+                                                occupancy=info[pg.STATE_G_OCCUPANCY],
+                                                dropped_tasks=info[pg.STATE_G_DROPPED_TASKS],
+                                                finished_tasks=info[pg.STATE_G_FINISHED_TASKS],
+                                                total_tasks=info[pg.STATE_G_TOTAL_TASKS])
                 if self.collect_data:
                     self.data_collector.add_data_point(i, step, state, action, reward, new_state, done)
                 step += 1
             self.mh.compile_aggregate_metrics(i, step)
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                              self.mh.episode_average_reward(i)))
+        self.mh.store_as_cvs(file_name=self.result_file)
         self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type + self.plot_name, print_instead=print_instead)
         self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type + self.plot_name, print_instead=print_instead)
         self.mh.clean_plt_resources()

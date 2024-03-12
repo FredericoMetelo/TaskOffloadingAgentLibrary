@@ -11,9 +11,11 @@ class AlwaysLocal(ControlAlgorithm):
     offloaded randomly.
     """
 
-    def __init__(self, action_space, output_shape, input_shape, agents, clip_rewards=False, collect_data=False):
+    def __init__(self, action_space, output_shape, input_shape, agents, clip_rewards=False, collect_data=False,
+                 plot_name=None, file_name=None):
         super().__init__(action_space=action_space, output_shape=output_shape, input_shape=input_shape, agents=agents,
-                         clip_rewards=clip_rewards, collect_data=collect_data)
+                         clip_rewards=clip_rewards,
+                         collect_data=collect_data, plot_name=plot_name, file_name=file_name)
         self.control_type = "Always_Local"
 
     @property

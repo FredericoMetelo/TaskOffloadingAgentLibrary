@@ -7,8 +7,9 @@ from abc import ABC, abstractmethod
 
 
 class Agent(ABC):
-    def __init__(self, input_shape, action_space, output_shape, learning_rate=0.7):
+    def __init__(self, input_shape, action_space, output_shape, learning_rate=0.7, collect_data=False, file_name=None):
 
+        self.data_collector = None
         self.input_shape = input_shape
         self.action_shape = output_shape
         self.learning_rate = learning_rate
@@ -18,6 +19,11 @@ class Agent(ABC):
         self.step = 0
 
         self.control_type = None
+        self.file_name = file_name
+        self.collect_data = collect_data
+        if self.collect_data:
+            print("Saving Data to CSV" + self.file_name + '.csv')
+            self.data_collector.save_to_csv(self.file_name + '.csv')
 
     @abstractmethod
     def get_action(self, observation):

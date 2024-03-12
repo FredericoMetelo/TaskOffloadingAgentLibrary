@@ -7,3 +7,6 @@ Datasets/*.tar.gz
 Datasets/*/*.tar.gz
 Datasets/*.csv
 Datasets/*/*.csv
+!OutputData/README.md
+OutputData/*.csv
+OutputData/*
