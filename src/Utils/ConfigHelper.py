@@ -98,7 +98,7 @@ def generate_config_dict(controllers="[0]",
                          size=10,
                          simulation_time=1000,
                          radius=50,
-                         frequency_of_action=5,
+                         frequency_of_action=2,
 
                          has_cloud=1,
                          cloud_VM_processing_power=[1e8],
