@@ -308,5 +308,5 @@ def plot_results(least_queues, random, always_local, ddqn):
 if __name__ == '__main__':
     # plot_all_complete_percentage_in_dir('./OutputData/StateSpaceExploration/', [2, 4, 8, 16],
     #                                     [0.0005, 0.005, 0.01, 0.05, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-    plot_results(least_queues='./OutputData/least_queue_result_metrics', random='./OutputData/random_result_metrics', always_local='./OutputData/always_local_result_metrics', ddqn='./OutputData/DDQN_result_metrics')
+    plot_results(least_queues='./OutputData/least_queue_ether_result_metrics', random='./OutputData/random_ether_result_metrics', always_local='./OutputData/always_local_ether_result_metrics', ddqn='./OutputData/DDQN_result_ether_metrics')
     # plot_rewards(ddqn='./OutputData/random_result_rewards_V2')
