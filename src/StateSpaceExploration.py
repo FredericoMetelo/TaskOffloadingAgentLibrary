@@ -70,7 +70,7 @@ if __name__ == '__main__':
 
                 print("Starting training for {}% occupancy".format(expected_occupancy))
                 controllers = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-                config_dict = ch.generate_config_dict(expected_occupancy=expected_occupancy,
+                config_dict = ch.generate_config_dict(lambda_task_arrival_rate=expected_occupancy,
                                                       controllers=controllers,
                                                       # Simulation Parameters
                                                       size=30,

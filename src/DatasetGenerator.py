@@ -68,7 +68,7 @@ if __name__ == '__main__':
             file_name = "./Datasets/LeastQueueAgent/LeastQueueAgent_{:.1f}".format(expected_occupancy)
 
             controllers = ["0"]  # , "5" only one for now...
-            config_dict = ch.generate_config_dict(expected_occupancy=0.8,
+            config_dict = ch.generate_config_dict(lambda_task_arrival_rate=0.8,
                                                   controllers=controllers,
                                                   # Simulation Parameters
                                                   size=7,
@@ -104,7 +104,7 @@ if __name__ == '__main__':
                                                   POSITIONS="18.55895350495783,47.02475796027715;28.55895350495783,57.02475796027715;20.55895350495783,37.02475796027715;1.55895350495783,1.02475796027715;16.55895350495783,17.02475796027715;29.56499372388999,27.28732691557995;25.366872150976409,13.28729893321355",
                                                   TOPOLOGY="0,1,2,3,4,5,6;1,0;2,0;3,0;4,0;5,0;6,0")
 
-            env = PeersimEnv(configs=config_dict, render_mode="ansi", simtype="basic", log_dir='logs/', randomize_seed=True)
+            env = PeersimEnv(configs=config_dict, render_mode="ansi", simtype="basic", log_dir='../logs/', randomize_seed=True)
             env.reset()
 
             obs = env.observation_space("worker_0")
