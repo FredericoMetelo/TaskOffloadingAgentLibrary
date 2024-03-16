@@ -25,7 +25,6 @@ import torch as T
 
 from src.Utils import EtherTopologyReader as etr
 def print_all_csv(dir="./Plots/"):
-    # Help from ChatGPT
     csv_files = [file for file in os.listdir(dir) if file.endswith(".csv")]
     plt.figure()
     for file in csv_files:
@@ -100,7 +99,7 @@ if __name__ == '__main__':
 #TTE%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 #ETS%%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-    topology_file = "./etherTopologies/one_cluste_8rpi_manual.json"
+    topology_file = "./etherTopologies/network_4_clusters.json" #one_cluste_8rpi_manual.json"
     topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
 
     manual_config = True
