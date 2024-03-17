@@ -1,5 +1,6 @@
 # This is a sample Python script.
 import os
+from time import sleep
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
@@ -119,7 +120,7 @@ if __name__ == '__main__':
     manual_positions = topology_dict["positions"]
     manual_topology = topology_dict["topology"]
     controllers = topology_dict["controllers"] #  ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    for lambda_var in ["0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]:
+    for lambda_var in ["1.0"]:
         config_dict = ch.generate_config_dict(lambda_task_arrival_rate=lambda_var,
                                               controllers=controllers,
 
@@ -248,8 +249,9 @@ if __name__ == '__main__':
                                   output_shape=output_shape,
                                   action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
                                   batch_size=500,
-                                  epsilon_start=1.0,
-                                  epsilon_decay=(1.0 - 0.3) / (999 * 100),                          epsilon_end=0.1,
+                                  epsilon_start=0.10,
+                                  epsilon_decay=(1.0 - 0.3) / (999 * 100),
+                                  epsilon_end=0.1,
                                   gamma=0.99,
                                   save_interval=99,
                                   update_interval=300,
@@ -268,8 +270,8 @@ if __name__ == '__main__':
             #
             warm_up_file = None
             # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-            load_weights = None
-            # load_weights = "./models/DDQN_Q_value_99"
+            # load_weights = None
+            load_weights = "./models/DDQN_Q_value_297"
             # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
             #                  load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train")
 
@@ -317,7 +319,7 @@ if __name__ == '__main__':
             if wait_on_fail:
                 input("Press enter to kill the simulation...")
             env.close()
+        sleep(30)
 
-    # print_all_csv()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
