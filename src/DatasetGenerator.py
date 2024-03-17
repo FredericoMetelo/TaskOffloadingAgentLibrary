@@ -21,7 +21,7 @@ import traceback
 
 
 def print_all_csv(dir="./Plots/"):
-    # Help from ChatGPT
+
     csv_files = [file for file in os.listdir(dir) if file.endswith(".csv")]
     plt.figure()
     for file in csv_files:

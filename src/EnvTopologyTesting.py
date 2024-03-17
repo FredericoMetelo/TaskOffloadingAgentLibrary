@@ -26,7 +26,6 @@ import torch as T
 
 from src.Utils import EtherTopologyReader as etr
 def print_all_csv(dir="./Plots/"):
-    # Help from ChatGPT
     csv_files = [file for file in os.listdir(dir) if file.endswith(".csv")]
     plt.figure()
     for file in csv_files:
@@ -101,26 +100,28 @@ if __name__ == '__main__':
 #TTE%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 #ETS%%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-    topology_file = "./etherTopologies/one_cluste_8rpi_manual.json"
-    topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
 
-    manual_config = True
-    manual_no_layers = topology_dict["number_of_layers"]
-    manual_layers_that_get_tasks = topology_dict["layers_that_get_tasks"]
-    manual_clientLayers = topology_dict["client_layers"]
-    manual_no_nodes = topology_dict["number_of_nodes"]
-    manual_nodes_per_layer = topology_dict["nodes_per_layer"]
-    manual_freqs = topology_dict["processing_powers"]
-    manual_freqs_array = topology_dict["freqs_per_layer_array"]
-    manual_qmax = topology_dict["memories"]
-    manual_qmax_array = topology_dict["q_max_per_layer_array"]
-    manual_cores = topology_dict["cores"]
-    manual_cores_array = topology_dict["no_cores_per_layer_array"]
-    manual_variations = topology_dict["variations_per_layer_array"]
-    manual_positions = topology_dict["positions"]
-    manual_topology = topology_dict["topology"]
-    controllers = topology_dict["controllers"] #  ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    for lambda_var in ["1.0"]:
+
+    lambda_var = "0.5"
+    for topology_no_clusters in ["2", "3", "4"]:
+        topology_file = f"./etherTopologies/network_{topology_no_clusters}_clusters.json"  # network_4_clusters.json"
+        topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
+        manual_config = True
+        manual_no_layers = topology_dict["number_of_layers"]
+        manual_layers_that_get_tasks = topology_dict["layers_that_get_tasks"]
+        manual_clientLayers = topology_dict["client_layers"]
+        manual_no_nodes = topology_dict["number_of_nodes"]
+        manual_nodes_per_layer = topology_dict["nodes_per_layer"]
+        manual_freqs = topology_dict["processing_powers"]
+        manual_freqs_array = topology_dict["freqs_per_layer_array"]
+        manual_qmax = topology_dict["memories"]
+        manual_qmax_array = topology_dict["q_max_per_layer_array"]
+        manual_cores = topology_dict["cores"]
+        manual_cores_array = topology_dict["no_cores_per_layer_array"]
+        manual_variations = topology_dict["variations_per_layer_array"]
+        manual_positions = topology_dict["positions"]
+        manual_topology = topology_dict["topology"]
+        controllers = topology_dict["controllers"]  # ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         config_dict = ch.generate_config_dict(lambda_task_arrival_rate=lambda_var,
                                               controllers=controllers,
 
@@ -181,7 +182,7 @@ if __name__ == '__main__':
 
 
         wait_on_fail = False
-        suffix_for_results = f"_{lambda_var}"
+        suffix_for_results = f"_no_clusters_{topology_no_clusters}_lambda_{lambda_var}"
 
         # simtype = "basic"
         simtype = "basic-workload"
@@ -245,19 +246,20 @@ if __name__ == '__main__':
             # NN ==========================================================================
             neighbourRanks = env.neighbourMatrix
             output_shape = {agent: len(neighbourRanks[getIdFromAgent(agent)]) for agent in env.possible_agents}
-            # agent = DDQNAgentMARL(input_shape=shape_obs_flat,
-            #                       output_shape=output_shape,
-            #                       action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
-            #                       batch_size=500,
-            #                       epsilon_start=1.0,
-            #                       epsilon_decay=(1.0 - 0.3) / (999 * 100),                          epsilon_end=0.1,
-            #                       gamma=0.99,
-            #                       save_interval=99,
-            #                       update_interval=300,
-            #                       learning_rate=0.0001,
-            #                       agents=env.possible_agents,
-            #                       )
-
+            agent = DDQNAgentMARL(input_shape=shape_obs_flat,
+                                  output_shape=output_shape,
+                                  action_spaces=[env.action_space(agent) for agent in env.agents],
+                                  # TODO: This is a hack... Fix this ffs
+                                  batch_size=500,
+                                  epsilon_start=1.0,
+                                  epsilon_decay=(1.0 - 0.3) / (999 * 100),
+                                  epsilon_end=0.1,
+                                  gamma=0.99,
+                                  save_interval=99,
+                                  update_interval=300,
+                                  learning_rate=0.0001,
+                                  agents=env.possible_agents,
+                                  )
 
             # agent = A2CAgent(input_shape=shape_obs_flat,
             #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
@@ -269,14 +271,16 @@ if __name__ == '__main__':
             #
             warm_up_file = None
             # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
-            # load_weights = None
-            load_weights = "./models/DDQN_Q_value_297"
-            # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-            #                  load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train")
+            load_weights = None
+            # load_weights = "./models/DDQN_Q_value_99"
+            agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
+                             load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train" + suffix_for_results)
 
             num_episodes = 100
+            agent.epsilon = 0.1
             agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-                             load_weights=load_weights, results_file="./OutputData/DDQN_result_ether" + suffix_for_results)
+                             load_weights=load_weights,
+                             results_file="./OutputData/DDQN_result_ether" + suffix_for_results)
             # Baselines ===================================================================
             #
             lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
@@ -288,7 +292,7 @@ if __name__ == '__main__':
                                      plot_name="least_queue"
                                      )
             lq.execute_simulation(env, num_episodes, print_instead=False)
-            #
+            # #
             rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
                                           output_shape=max_neighbours,
                                           action_space=env.action_space("worker_0"),
@@ -309,7 +313,7 @@ if __name__ == '__main__':
                                   )
             nothing.execute_simulation(env, num_episodes, print_instead=False)
             env.close()
-
+            sleep(10)
             print("Training finished.\n")
 
         except Exception:
@@ -318,7 +322,7 @@ if __name__ == '__main__':
             if wait_on_fail:
                 input("Press enter to kill the simulation...")
             env.close()
-        sleep(30)
 
+    # print_all_csv()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
