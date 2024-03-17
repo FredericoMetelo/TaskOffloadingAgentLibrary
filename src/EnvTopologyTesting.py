@@ -99,26 +99,28 @@ if __name__ == '__main__':
 #TTE%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 #ETS%%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-    topology_file = "./etherTopologies/one_cluste_8rpi_manual.json" # network_4_clusters.json"
-    topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
 
-    manual_config = True
-    manual_no_layers = topology_dict["number_of_layers"]
-    manual_layers_that_get_tasks = topology_dict["layers_that_get_tasks"]
-    manual_clientLayers = topology_dict["client_layers"]
-    manual_no_nodes = topology_dict["number_of_nodes"]
-    manual_nodes_per_layer = topology_dict["nodes_per_layer"]
-    manual_freqs = topology_dict["processing_powers"]
-    manual_freqs_array = topology_dict["freqs_per_layer_array"]
-    manual_qmax = topology_dict["memories"]
-    manual_qmax_array = topology_dict["q_max_per_layer_array"]
-    manual_cores = topology_dict["cores"]
-    manual_cores_array = topology_dict["no_cores_per_layer_array"]
-    manual_variations = topology_dict["variations_per_layer_array"]
-    manual_positions = topology_dict["positions"]
-    manual_topology = topology_dict["topology"]
-    controllers = topology_dict["controllers"] #  ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    for lambda_var in ["0.5", "0.6", "0.7", "0.8", "0.9", "1.0"]:
+
+    lambda_var = "0.5"
+    for topology_no_clusters in ["2", "3", "4"]:
+        topology_file = f"./etherTopologies/network_{topology_no_clusters}_clusters.json"  # network_4_clusters.json"
+        topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
+        manual_config = True
+        manual_no_layers = topology_dict["number_of_layers"]
+        manual_layers_that_get_tasks = topology_dict["layers_that_get_tasks"]
+        manual_clientLayers = topology_dict["client_layers"]
+        manual_no_nodes = topology_dict["number_of_nodes"]
+        manual_nodes_per_layer = topology_dict["nodes_per_layer"]
+        manual_freqs = topology_dict["processing_powers"]
+        manual_freqs_array = topology_dict["freqs_per_layer_array"]
+        manual_qmax = topology_dict["memories"]
+        manual_qmax_array = topology_dict["q_max_per_layer_array"]
+        manual_cores = topology_dict["cores"]
+        manual_cores_array = topology_dict["no_cores_per_layer_array"]
+        manual_variations = topology_dict["variations_per_layer_array"]
+        manual_positions = topology_dict["positions"]
+        manual_topology = topology_dict["topology"]
+        controllers = topology_dict["controllers"]  # ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
         config_dict = ch.generate_config_dict(lambda_task_arrival_rate=lambda_var,
                                               controllers=controllers,
 
