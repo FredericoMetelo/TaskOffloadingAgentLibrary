@@ -48,7 +48,10 @@ def plot_lines(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_la
     plt.legend()
     # Display the plot
     plt.show()
-def plot_lines_fill_between(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_label, convert_to_float=False):
+
+
+def plot_lines_fill_between(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_label,
+                            convert_to_float=False):
     # Convert the y values to float arrays
     if convert_to_float:
         for idx in range(len(y_values)):
@@ -70,6 +73,7 @@ def plot_lines_fill_between(x_values, y_values, y_labels, plot_title, x_axis_lab
     plt.legend()
     # Display the plot
     plt.show()
+
 
 def plot_all_complete_percentage_in_dir(dir, cores, lambdas):
     csv_files = [file for file in os.listdir(dir) if os.path.isfile(os.path.join(dir, file))]
@@ -327,11 +331,11 @@ def plot_results(least_queues, random, always_local, ddqn):
 
 
 def plot_pe_10_episodes(
-    least_queues = './OutputData/least_queue_ether_result_metrics',
-    random = './OutputData/random_ether_result_metrics',
-    always_local = './OutputData/always_local_ether_result_metrics',
-    ddqn = './OutputData/DDQN_result_ether_metrics'
-    ):
+        least_queues='./OutputData/least_queue_ether_result_metrics',
+        random='./OutputData/random_ether_result_metrics',
+        always_local='./OutputData/always_local_ether_result_metrics',
+        ddqn='./OutputData/DDQN_result_ether_metrics'
+):
     # Read the data from the CSV file
     least_queues_result = read_cvs(least_queues)
     random_result = read_cvs(random)
@@ -344,11 +348,15 @@ def plot_pe_10_episodes(
     random_data = random_result[1:]
     always_local_data = always_local_result[1:]
     ddqn_data = ddqn_result[1:]
-    
-    least_queues_occupancy, least_queues_overloaded, least_queues_response_time, least_queues_dropped, least_queues_finished, least_queues_total = process_for_each_10(least_queues_data)
-    random_occupancy, random_overloaded, random_response_time, random_dropped, random_finished, random_total = process_for_each_10(random_data)
-    always_local_occupancy, always_local_overloaded, always_local_response_time, always_local_dropped, always_local_finished, always_local_total = process_for_each_10(always_local_data)
-    ddqn_occupancy, ddqn_overloaded, ddqn_response_time, ddqn_dropped, ddqn_finished, ddqn_total = process_for_each_10(ddqn_data)
+
+    least_queues_occupancy, least_queues_overloaded, least_queues_response_time, least_queues_dropped, least_queues_finished, least_queues_total = process_for_each_10(
+        least_queues_data)
+    random_occupancy, random_overloaded, random_response_time, random_dropped, random_finished, random_total = process_for_each_10(
+        random_data)
+    always_local_occupancy, always_local_overloaded, always_local_response_time, always_local_dropped, always_local_finished, always_local_total = process_for_each_10(
+        always_local_data)
+    ddqn_occupancy, ddqn_overloaded, ddqn_response_time, ddqn_dropped, ddqn_finished, ddqn_total = process_for_each_10(
+        ddqn_data)
 
     x = range(len(least_queues_occupancy[0]))
     # Add all the dataon the same plot to a matrix
@@ -368,11 +376,11 @@ def plot_pe_10_episodes(
     # plot_lines(x_values=x, y_values=occupancy_matrix, y_labels=y_labels, plot_title='Occupancy',
     #            x_axis_label='Episodes', y_axis_label='Occupancy', convert_to_float=True)
     plot_lines_fill_between(x_values=x, y_values=occupancy_matrix, y_labels=y_labels, plot_title='Occupancy',
-               x_axis_label='Episodes', y_axis_label='Occupancy', convert_to_float=True)
+                            x_axis_label='Episodes', y_axis_label='Occupancy', convert_to_float=True)
     plot_lines_fill_between(x_values=x, y_values=response_time_matrix, y_labels=y_labels, plot_title='Response Time',
-               x_axis_label='Episodes', y_axis_label='Response Time', convert_to_float=True)
+                            x_axis_label='Episodes', y_axis_label='Response Time', convert_to_float=True)
     plot_lines_fill_between(x_values=x, y_values=overloaded_matrix, y_labels=y_labels, plot_title='Overloaded',
-               x_axis_label='Episodes', y_axis_label='Overloaded', convert_to_float=True)
+                            x_axis_label='Episodes', y_axis_label='Overloaded', convert_to_float=True)
     plot_lines(x_values=x, y_values=dropped_tasks_matrix, y_labels=y_labels, plot_title='Dropped Tasks',
                x_axis_label='Episodes', y_axis_label='Dropped Tasks', convert_to_float=True)
     plot_lines(x_values=x, y_values=finished_tasks_matrix, y_labels=y_labels, plot_title='Finished Tasks',
@@ -380,7 +388,7 @@ def plot_pe_10_episodes(
     plot_lines(x_values=x, y_values=total_tasks_matrix, y_labels=y_labels, plot_title='Total Tasks',
                x_axis_label='Episodes', y_axis_label='Total Tasks', convert_to_float=True)
 
-    
+
 def process_for_each_10(array):
     # Separate the data and pre-process it
 
@@ -401,11 +409,11 @@ def process_for_each_10(array):
     for i in range(len(array)):
         next = j % 10
         overloaded = ast.literal_eval(process_string_array_entry(array[i][0]))
-        occupancy =  ast.literal_eval(process_string_array_entry(array[i][1]))
+        occupancy = ast.literal_eval(process_string_array_entry(array[i][1]))
         response_time = ast.literal_eval(process_string_array_entry(array[i][2]))
-        dropped =   ast.literal_eval(process_string_array_entry(array[i][3]))
-        finished =  ast.literal_eval(process_string_array_entry(array[i][4]))
-        total =  ast.literal_eval(process_string_array_entry(array[i][5]))
+        dropped = ast.literal_eval(process_string_array_entry(array[i][3]))
+        finished = ast.literal_eval(process_string_array_entry(array[i][4]))
+        total = ast.literal_eval(process_string_array_entry(array[i][5]))
 
         acc_overloaded.append(np.array([np.mean(overloaded), np.std(overloaded)]))
         acc_occupancy.append(np.array([np.mean(occupancy), np.std(occupancy)]))
@@ -470,12 +478,142 @@ def get_average_episode_data(array):
         total_l.append(np.mean(acc_total))
 
     return overloaded_l, occupancy_l, response_time_l, dropped_l, finished_l, total_l
+
+
+def plot_average_state_space_exploration(least_queues_base, random_base, always_local_base, ddqn_base, prefix_format,
+                                         x_values):
+    """
+    Make chart of the evolution of the average test across all the episodes. Therefore, gathering the average of the averages
+    might be interesting. Aka a plot with an entry with 4 lines (DDQN, LQ, AL, RN) with axis x lambda, axis y whatever
+    data is being measured.
+    :param least_queues_base:
+    :param random_base:
+    :param always_local_base:
+    :param ddqn_base:
+    :param prefix_format:
+    :param x_values:
+    :return:
+    """
+    least_queues_avg_for_x = {
+        'occupancy': [],
+        'overloaded': [],
+        'response_time': [],
+        'dropped': [],
+        'finished': [],
+        'total': []
+    }
+    random_avg_for_x = {
+        'occupancy': [],
+        'overloaded': [],
+        'response_time': [],
+        'dropped': [],
+        'finished': [],
+        'total': []
+    }
+
+    always_local_avg_for_x = {
+        'occupancy': [],
+        'overloaded': [],
+        'response_time': [],
+        'dropped': [],
+        'finished': [],
+        'total': []
+    }
+
+    ddqn_avg_for_x = {
+        'occupancy': [],
+        'overloaded': [],
+        'response_time': [],
+        'dropped': [],
+        'finished': [],
+        'total': []
+
+    }
+
+    for x_value in x_values:
+        least_queues_result = read_cvs(least_queues_base + prefix_format % x_value)
+        random_result = read_cvs(random_base + prefix_format % x_value)
+        always_local_result = read_cvs(always_local_base + prefix_format % x_value)
+        ddqn_result = read_cvs(ddqn_base + prefix_format % x_value)
+
+        # Extract the headers and the data
+        headers = least_queues_result[0]
+        least_queues_data = least_queues_result[1:]
+        random_data = random_result[1:]
+        always_local_data = always_local_result[1:]
+        ddqn_data = ddqn_result[1:]
+
+        least_queues_occupancy, least_queues_overloaded, least_queues_response_time, least_queues_dropped, least_queues_finished, least_queues_total = get_average_episode_data(
+            least_queues_data)
+        # add the average of each to the dictionary:
+        least_queues_avg_for_x['occupancy'].append(np.mean(least_queues_occupancy))
+        least_queues_avg_for_x['overloaded'].append(np.mean(least_queues_overloaded))
+        least_queues_avg_for_x['response_time'].append(np.mean(least_queues_response_time))
+        least_queues_avg_for_x['dropped'].append(np.mean(least_queues_dropped))
+        least_queues_avg_for_x['finished'].append(np.mean(least_queues_finished))
+        least_queues_avg_for_x['total'].append(np.mean(least_queues_total))
+
+        random_occupancy, random_overloaded, random_response_time, random_dropped, random_finished, random_total = get_average_episode_data(
+            random_data)
+        # add the average of each to the dictionary:
+        random_avg_for_x['occupancy'].append(np.mean(random_occupancy))
+        random_avg_for_x['overloaded'].append(np.mean(random_overloaded))
+        random_avg_for_x['response_time'].append(np.mean(random_response_time))
+        random_avg_for_x['dropped'].append(np.mean(random_dropped))
+        random_avg_for_x['finished'].append(np.mean(random_finished))
+        random_avg_for_x['total'].append(np.mean(random_total))
+
+        always_local_occupancy, always_local_overloaded, always_local_response_time, always_local_dropped, always_local_finished, always_local_total = get_average_episode_data(
+            always_local_data)
+        # add the average of each to the dictionary:
+        always_local_avg_for_x['occupancy'].append(np.mean(always_local_occupancy))
+        always_local_avg_for_x['overloaded'].append(np.mean(always_local_overloaded))
+        always_local_avg_for_x['response_time'].append(np.mean(always_local_response_time))
+        always_local_avg_for_x['dropped'].append(np.mean(always_local_dropped))
+        always_local_avg_for_x['finished'].append(np.mean(always_local_finished))
+        always_local_avg_for_x['total'].append(np.mean(always_local_total))
+
+        ddqn_occupancy, ddqn_overloaded, ddqn_response_time, ddqn_dropped, ddqn_finished, ddqn_total = get_average_episode_data(
+            ddqn_data)
+        # add the average of each to the dictionary:
+        ddqn_avg_for_x['occupancy'].append(np.mean(ddqn_occupancy))
+        ddqn_avg_for_x['overloaded'].append(np.mean(ddqn_overloaded))
+        ddqn_avg_for_x['response_time'].append(np.mean(ddqn_response_time))
+        ddqn_avg_for_x['dropped'].append(np.mean(ddqn_dropped))
+        ddqn_avg_for_x['finished'].append(np.mean(ddqn_finished))
+        ddqn_avg_for_x['total'].append(np.mean(ddqn_total))
+    # plot the averages
+    plot_lines(x_values,
+               [least_queues_avg_for_x['occupancy'], random_avg_for_x['occupancy'], always_local_avg_for_x['occupancy'],
+                ddqn_avg_for_x['occupancy']], ['Least Queues', 'Random', 'Always Local', 'DDQN'], 'Occupancy', 'Lambda',
+               'Occupancy', convert_to_float=True)
+    plot_lines(x_values, [least_queues_avg_for_x['overloaded'], random_avg_for_x['overloaded'],
+                          always_local_avg_for_x['overloaded'], ddqn_avg_for_x['overloaded']],
+               ['Least Queues', 'Random', 'Always Local', 'DDQN'], 'Overloaded', 'Lambda', 'Overloaded',
+               convert_to_float=True)
+    plot_lines(x_values, [least_queues_avg_for_x['response_time'], random_avg_for_x['response_time'],
+                          always_local_avg_for_x['response_time'], ddqn_avg_for_x['response_time']],
+               ['Least Queues', 'Random', 'Always Local', 'DDQN'], 'Response Time', 'Lambda', 'Response Time',
+               convert_to_float=True)
+    plot_lines(x_values,
+               [least_queues_avg_for_x['dropped'], random_avg_for_x['dropped'], always_local_avg_for_x['dropped'],
+                ddqn_avg_for_x['dropped']], ['Least Queues', 'Random', 'Always Local', 'DDQN'], 'Dropped', 'Lambda',
+               'Dropped', convert_to_float=True)
+    plot_lines(x_values,
+               [least_queues_avg_for_x['finished'], random_avg_for_x['finished'], always_local_avg_for_x['finished'],
+                ddqn_avg_for_x['finished']], ['Least Queues', 'Random', 'Always Local', 'DDQN'], 'Finished', 'Lambda',
+               'Finished', convert_to_float=True)
+    plot_lines(x_values, [least_queues_avg_for_x['total'], random_avg_for_x['total'], always_local_avg_for_x['total'],
+                          ddqn_avg_for_x['total']], ['Least Queues', 'Random', 'Always Local', 'DDQN'], 'Total',
+               'Lambda', 'Total', convert_to_float=True)
+
+
 def plot_per_episode(
-    least_queues = './OutputData/least_queue_ether_result_metrics',
-    random = './OutputData/random_ether_result_metrics',
-    always_local = './OutputData/always_local_ether_result_metrics',
-    ddqn = './OutputData/DDQN_result_ether_metrics'
-    ):
+        least_queues='./OutputData/least_queue_ether_result_metrics',
+        random='./OutputData/random_ether_result_metrics',
+        always_local='./OutputData/always_local_ether_result_metrics',
+        ddqn='./OutputData/DDQN_result_ether_metrics'
+):
     # Read the data from the CSV file
     least_queues_result = read_cvs(least_queues)
     random_result = read_cvs(random)
@@ -503,20 +641,28 @@ def plot_per_episode(
     y_labels = ['Least Queues', 'Random', 'Always Local', 'DDQN']
     occupancy_matrix = [least_queues_occupancy, random_occupancy, always_local_occupancy, ddqn_occupancy]
     response_time_matrix = [least_queues_response_time, random_response_time, always_local_response_time,
-    ddqn_response_time]
+                            ddqn_response_time]
     overloaded_matrix = [least_queues_overloaded, random_overloaded, always_local_overloaded, ddqn_overloaded]
 
     dropped_tasks_matrix = [always_local_dropped, random_dropped, always_local_dropped,
-    ddqn_dropped]
+                            ddqn_dropped]
     finished_tasks_matrix = [least_queues_finished, random_finished, always_local_finished,
-    ddqn_finished]
+                             ddqn_finished]
     total_tasks_matrix = [least_queues_total, random_total, always_local_total, ddqn_total]
 
 
 if __name__ == '__main__':
     # plot_all_complete_percentage_in_dir('./OutputData/StateSpaceExploration/', [2, 4, 8, 16],
     #                                     [0.0005, 0.005, 0.01, 0.05, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-    plot_results(least_queues='./OutputData/least_queue_ether_result_metrics', random='./OutputData/random_ether_result_metrics', always_local='./OutputData/always_local_ether_result_metrics', ddqn='./OutputData/DDQN_result_ether_metrics')
+    # plot_results(least_queues='./OutputData/least_queue_ether_result_metrics',
+    #              random='./OutputData/random_ether_result_metrics',
+    #              always_local='./OutputData/always_local_ether_result_metrics',
+    #              ddqn='./OutputData/DDQN_result_ether_metrics')
     # plot_per_episode(least_queues='./OutputData/least_queue_ether_result_metrics', random='./OutputData/random_ether_result_metrics', always_local='./OutputData/always_local_ether_result_metrics', ddqn='./OutputData/DDQN_result_ether_metrics')
     # plot_rewards(ddqn='./OutputData/DDQN_result_ether_train_rewards')
     # plot_pe_10_episodes(least_queues='./OutputData/least_queue_ether_result_metrics', random='./OutputData/random_ether_result_metrics', always_local='./OutputData/always_local_ether_result_metrics', ddqn='./OutputData/DDQN_result_ether_metrics')
+    plot_average_state_space_exploration(least_queues_base='./OutputData/LambdaExploration/least_queue_ether',
+                                            random_base='./OutputData/LambdaExploration/random_ether',
+                                            always_local_base='./OutputData/LambdaExploration/always_local_ether',
+                                            ddqn_base='./OutputData/LambdaExploration/DDQN_result_ether',
+                                            prefix_format='_%.1f_result_metrics', x_values=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])

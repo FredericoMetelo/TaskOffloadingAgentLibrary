@@ -187,8 +187,9 @@ if __name__ == '__main__':
         # log_dir='logs/'
         log_dir = None
 
+        render_mode = None
         # render_mode = "ascii"
-        render_mode = "human"
+        # render_mode = "human"
 
         # phy_rs_term = None
         phy_rs_term = rshelper.mean_relative_load
