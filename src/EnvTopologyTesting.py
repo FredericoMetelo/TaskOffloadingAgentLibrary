@@ -1,7 +1,8 @@
 # This is a sample Python script.
+import json
 import os
 from time import sleep
-
+import time
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 
@@ -101,7 +102,12 @@ if __name__ == '__main__':
 
 #ETS%%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
-
+    time_list = {
+                "DDQN": [],
+                "least_queue": [],
+                "random": [],
+                "always_local": []
+            }
     lambda_var = "0.5"
     for topology_no_clusters in ["2", "3", "4"]:
         topology_file = f"./etherTopologies/network_{topology_no_clusters}_clusters.json"  # network_4_clusters.json"
@@ -273,45 +279,59 @@ if __name__ == '__main__':
             # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
             load_weights = None
             # load_weights = "./models/DDQN_Q_value_99"
-            agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-                             load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train" + suffix_for_results)
+            # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
+            #                  load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train" + suffix_for_results)
+
 
             num_episodes = 100
             agent.epsilon = 0.1
+            start_time = time.time()
             agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                              load_weights=load_weights,
-                             results_file="./OutputData/DDQN_result_ether" + suffix_for_results)
+                             results_file="./OutputData/DDQN_result_ether_time" + suffix_for_results)
+            end_time = time.time()
+            time_list["DDQN"].append(end_time - start_time)
             # Baselines ===================================================================
             #
+            start_time = time.time()
             lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
                                      output_shape=max_neighbours,
                                      action_space=env.action_space("worker_0"),
                                       collect_data=False,
                                      agents=env.possible_agents,
-                                     file_name="./OutputData/least_queue_ether" + suffix_for_results,
+                                     file_name="./OutputData/least_queue_ether_time" + suffix_for_results,
                                      plot_name="least_queue"
                                      )
             lq.execute_simulation(env, num_episodes, print_instead=False)
+            end_time = time.time()
+            time_list["least_queue"].append(end_time - start_time)
             # #
+
+            start_time = time.time()
             rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
                                           output_shape=max_neighbours,
                                           action_space=env.action_space("worker_0"),
                                           collect_data=False,
                                           agents=env.possible_agents,
-                                          file_name="./OutputData/random_ether" + suffix_for_results,
+                                          file_name="./OutputData/random_ether_time" + suffix_for_results,
                                           plot_name="random"
                                           )
             rand.execute_simulation(env, num_episodes, print_instead=False)
+            end_time = time.time()
+            time_list["random"].append(end_time - start_time)
+
             # #
+            start_time = time.time()
             nothing = AlwaysLocal(input_shape=shape_obs_flat,
                                   output_shape=max_neighbours,
                                   action_space=env.action_space("worker_0"),
                                   agents=env.possible_agents,
                                   collect_data=False,
-                                  file_name="./OutputData/always_local_ether" + suffix_for_results,
+                                  file_name="./OutputData/always_local_ether_time" + suffix_for_results,
                                   plot_name="always_local"
                                   )
             nothing.execute_simulation(env, num_episodes, print_instead=False)
+            end_time = time.time()
             env.close()
             sleep(10)
             print("Training finished.\n")
@@ -322,7 +342,8 @@ if __name__ == '__main__':
             if wait_on_fail:
                 input("Press enter to kill the simulation...")
             env.close()
-
+    json_file = "time_list.json"
+    json.dump(time_list, open(json_file, "w"))
     # print_all_csv()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
