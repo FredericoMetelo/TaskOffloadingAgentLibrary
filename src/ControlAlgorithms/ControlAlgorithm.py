@@ -47,7 +47,7 @@ class ControlAlgorithm:
     def execute_simulation(self, env, num_episodes, print_instead=True):
         """ The name of this method is train_model exclusively for compatibility reasons, when running shallow models
         this will effectively not train anything"""
-        self.result_file=self.file_name + '_result'
+        self.result_file = self.file_name + '_result'
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,file_name=self.result_file)
         for i in range(num_episodes):
             done = [False for _ in env.agents]

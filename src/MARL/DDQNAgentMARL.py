@@ -87,6 +87,7 @@ class DDQNAgentMARL(Agent):
     def train_loop(self, env, num_episodes, print_instead=True, controllers=None, warm_up_file=None, load_weights=None,
                    results_file=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
+        self.result_file = self.file_name + '_result'
 
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
                      file_name=results_file)
@@ -172,6 +173,8 @@ class DDQNAgentMARL(Agent):
 
 
     def inference_loop(self, env, num_episodes, print_instead=True, controllers=None, load_weights=None, results_file=None):
+        self.result_file = self.file_name + '_result'
+
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
                      file_name=results_file)
         self.dg = dg(agents=env.possible_agents)
@@ -273,10 +276,10 @@ class DDQNAgentMARL(Agent):
 
         # In this case, we are using a epsilon-greedy policy
         if np.random.random() < self.epsilon:
-            print(f"(R) Exploring ({self.epsilon})")
+            # print(f"(R) Exploring ({self.epsilon})")
             action = np.random.choice(self.actions[agent])
         else:
-            print("(T) Exploiting")
+            # print("(T) Exploiting")
             #  We need to set the network to evaluation mode, because we are only predicting the action for one state,
             #  and batchnorm layers.
             #

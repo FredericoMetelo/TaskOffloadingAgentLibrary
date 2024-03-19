@@ -118,7 +118,7 @@ if __name__ == '__main__':
     manual_positions = topology_dict["positions"]
     manual_topology = topology_dict["topology"]
     controllers = topology_dict["controllers"] #  ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    for lambda_var in ["0.1", "0.3" "0.5", "0.8", "0.9"]:
+    for lambda_var in ["0.05", "0.01", "0.005"]:
         config_dict = ch.generate_config_dict(lambda_task_arrival_rate=lambda_var,
                                               controllers=controllers,
 
@@ -224,7 +224,7 @@ if __name__ == '__main__':
         alpha = 0.1
         gamma = 0.99
         epsilon = 0.1
-        num_episodes = 300
+        num_episodes = 100
 
         # For plotting metrics
         all_epochs = []
@@ -246,7 +246,7 @@ if __name__ == '__main__':
             output_shape = {agent: len(neighbourRanks[getIdFromAgent(agent)]) for agent in env.possible_agents}
             agent = DDQNAgentMARL(input_shape=shape_obs_flat,
                                   output_shape=output_shape,
-                                  action_spaces=[env.action_space(agent) for agent in env.agents],  # TODO: This is a hack... Fix this ffs
+                                  action_spaces=[env.action_space(agent) for agent in env.agents],
                                   batch_size=500,
                                   epsilon_start=1.0,
                                   epsilon_decay=(1.0 - 0.3) / (999 * 100),
@@ -260,7 +260,7 @@ if __name__ == '__main__':
 
 
             # agent = A2CAgent(input_shape=shape_obs_flat,
-            #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
+            #                  action_space=env.action_space("worker_0"),
             #                  output_shape=shape_a_flat,
             #                  agents=env.possible_agents,
             #                  gamma=0.55,
@@ -280,36 +280,38 @@ if __name__ == '__main__':
                              load_weights=load_weights, results_file="./OutputData/DDQN_result_ether" + suffix_for_results)
             # Baselines ===================================================================
             #
-            # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
-            #                          output_shape=max_neighbours,
-            #                          action_space=env.action_space("worker_0"),
-            #                           collect_data=False,
-            #                          agents=env.possible_agents,
-            #                          file_name="./OutputData/least_queue_ether" + suffix_for_results,
-            #                          plot_name="least_queue"
-            #                          )
-            # lq.execute_simulation(env, num_episodes, print_instead=False)
+            lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
+                                     output_shape=max_neighbours,
+                                     action_space=env.action_space("worker_0"),
+                                      collect_data=False,
+                                     agents=env.possible_agents,
+                                     file_name="./OutputData/least_queue_ether" + suffix_for_results,
+                                     plot_name="least_queue"
+                                     )
+            lq.execute_simulation(env, num_episodes, print_instead=False)
             # #
-            # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
-            #                               output_shape=max_neighbours,
-            #                               action_space=env.action_space("worker_0"),
-            #                               collect_data=False,
-            #                               agents=env.possible_agents,
-            #                               file_name="./OutputData/random_ether" + suffix_for_results,
-            #                               plot_name="random"
-            #                               )
-            # rand.execute_simulation(env, num_episodes, print_instead=False)
+            rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
+                                          output_shape=max_neighbours,
+                                          action_space=env.action_space("worker_0"),
+                                          collect_data=False,
+                                          agents=env.possible_agents,
+                                          file_name="./OutputData/random_ether" + suffix_for_results,
+                                          plot_name="random"
+                                          )
+            rand.execute_simulation(env, num_episodes, print_instead=False)
             # #
-            # nothing = AlwaysLocal(input_shape=shape_obs_flat,
-            #                       output_shape=max_neighbours,
-            #                       action_space=env.action_space("worker_0"),
-            #                       agents=env.possible_agents,
-            #                       collect_data=False,
-            #                       file_name="./OutputData/always_local_ether" + suffix_for_results,
-            #                       plot_name="always_local"
-            #                       )
-            # nothing.execute_simulation(env, num_episodes, print_instead=False)
+            nothing = AlwaysLocal(input_shape=shape_obs_flat,
+                                  output_shape=max_neighbours,
+                                  action_space=env.action_space("worker_0"),
+                                  agents=env.possible_agents,
+                                  collect_data=False,
+                                  file_name="./OutputData/always_local_ether" + suffix_for_results,
+                                  plot_name="always_local"
+                                  )
+            nothing.execute_simulation(env, num_episodes, print_instead=False)
             env.close()
+
+            sleep(10)
 
             print("Training finished.\n")
 
