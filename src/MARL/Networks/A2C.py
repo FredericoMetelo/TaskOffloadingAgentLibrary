@@ -1,3 +1,4 @@
+import numpy as np
 import torch as T
 import torch.nn as nn
 import torch.nn.functional as F
@@ -114,9 +115,9 @@ class ActorCritic(nn.Module):
         # layer4 = F.relu(self.bn4(self.fc4(layer3)))
 
         # Actor Head:
-        actor = F.relu(self.actor(last))
+        actor = self.actor(last)
         # Critic Head:
-        critic = F.relu(self.critic(last))
+        critic = self.critic(last)
 
         return actor, critic  # Logits, Value
 
@@ -135,8 +136,8 @@ class ActorCritic(nn.Module):
         :return: n-step bootstrapped returns
         """
         # Calculate the returns of the episode
-        states = T.tensor(self.states, dtype=T.float).to(self.device)  # We must convert the state vector to a tensor
-        next_states = T.tensor(self.next_states, dtype=T.float).to(self.device)
+        states = T.tensor(np.array(self.states[0]), dtype=T.float).to(self.device)  # We must convert the state vector to a tensor
+        next_states = T.tensor(np.array(self.next_states[0]), dtype=T.float).to(self.device)
         _, v_t = self.forward(states)
         _, v_t_1 = self.forward(next_states)
         done_t = T.tensor(done, dtype=T.float).to(self.device)
@@ -150,11 +151,12 @@ class ActorCritic(nn.Module):
         for t in reversed(range(len(self.rewards[0]))): # Iterate over reversed memory
             # reward + \gamma * R_{t+1}
             next_return = self.rewards[0][t] + self.gamma * next_return * (1 - done_t[t])
-            returns[0][t][0] = next_return
+            returns[t][0] = next_return
         return returns
 
     def calculate_loss(self, done):
-        states = T.tensor(self.states, dtype=T.float).to(self.device)
+
+        states = T.tensor(np.array(self.states[0]), dtype=T.float).to(self.device)
         actions = T.tensor(self.actions, dtype=T.long).to(self.device)
         # rewards = T.tensor(self.rewards, dtype=T.float).to(self.device)
         # next_states = T.tensor(self.next_states, dtype=T.float).to(self.device)
@@ -169,10 +171,10 @@ class ActorCritic(nn.Module):
 
         # Actor loss
         actor_probs = F.softmax(actor_logits, dim=1)
-        actor_loss = -T.mean(T.log(actor_probs[0].gather(1, actions)) * advantages.detach())
+        actor_loss = -T.mean(T.log(actor_probs.gather(1, actions)) * advantages.detach())
 
         # Critic loss
-        critic_loss = F.mse_loss(critic_values.squeeze(), returns.detach())
+        critic_loss = F.smooth_l1_loss(critic_values.squeeze(), returns.detach())  # Equivalent to Huber loss delta=1
 
         # Total loss
         total_loss = actor_loss + critic_loss
@@ -182,12 +184,12 @@ class ActorCritic(nn.Module):
         # This is the forward pass of the network, it is called when we call the network with an input
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
-        state = T.tensor([observation], dtype=T.float).to(self.device)
+        state = T.tensor(observation, dtype=T.float).to(self.device)
         pis, values = self.forward(state)
-        probs = T.softmax(pis, dim=1)
+        probs = T.softmax(pis, dim=0)
         dist = Categorical(probs)
         action = dist.sample()
-        return action.detach().cpu().numpy()[0]
+        return action.detach().cpu().numpy()
 
     def remember_batch(self, states, actions, rewards, next_states,  dones):
         self.states.append(states)
