@@ -4,7 +4,7 @@ from torchsummary import summary
 
 import torch as T
 from src.Agents.Agent import Agent
-from src.Agents.Networks.A2C import ActorCritic
+from src.MARL.Networks.A2C import ActorCritic
 from src.Utils import utils
 
 import peersim_gym.envs.PeersimEnv as pe
@@ -23,16 +23,19 @@ class A2CAgentMARL(Agent):
                  steps_for_return=150,
                  collect_data=False, save_interval=50, control_type="A2C"):
         super().__init__(input_shape, action_space, output_shape, learning_rate, collect_data=collect_data)
+        self.steps_for_return = steps_for_return
         self.gamma = gamma
         self.control_type = control_type
         self.possible_agents = agents
         self.save_interval = save_interval
 
         self.A2Cs = {}
-
+        self.action_shape = output_shape
         for agent in self.possible_agents:
-            self.A2Cs[agent] = ActorCritic(lr=learning_rate, input_dims=self.input_shape, fc1_dims=256, fc2_dims=256,
-                                           n_actions=self.actions)
+            rank = output_shape[agent]
+            self.A2Cs[agent] = ActorCritic(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256,
+                                           fc3_dims=128,
+                                           n_actions=rank)
             summary(self.A2Cs[agent], input_size=self.input_shape)
 
         self.amount_of_metrics = 50
@@ -55,16 +58,15 @@ class A2CAgentMARL(Agent):
         super().train_loop(env, num_episodes, print_instead, controllers)
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
 
-
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
-        steps_per_return = 5
+        steps_per_return = self.steps_for_return
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
                      file_name=results_file + "_result")
 
         if load_weights is not None:
             for idx, agent in enumerate(env.possible_agents):
                 agent_w = load_weights + f"_{agent}.pth.tar"
-                self.A2Cs[agent].load_checkpoint(load_weights)
+                self.A2Cs[agent].load_checkpoint(agent_w)
 
         for i in range(num_episodes):
             # Prepare variables for the next run
@@ -81,7 +83,7 @@ class A2CAgentMARL(Agent):
             while not utils.is_done(dones):
                 print(f'Step: {step}\n')
                 # Interaction Step:
-                targets = {agent: np.floor(self.get_action(np.array([states[idx]]), agent)) for idx, agent in
+                targets = {agent: np.floor(self.get_action(np.array([states[idx]])[0], agent)) for idx, agent in
                            enumerate(agent_list)}
                 actions = utils.make_action(targets, agent_list)
 
@@ -99,16 +101,18 @@ class A2CAgentMARL(Agent):
                 states = next_states
                 last_losses = {agent: 0 for agent in agent_list}
 
-                if step % steps_per_return == 0 or dones:
+                step += 1
+                if step % steps_per_return == 0 or self.check_all_done(dones):
                     # Here we will learn the paths from all the agents
+                    print("Training...")
                     for agent in agent_list:
                         s, a, r, s_next, fin = self.__get_agent_step_data(agent)
                         if s and a and r and s_next and fin:  # Check if fin is always not empty as well
                             last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=agent)
                             last_losses[agent] = last_loss if not last_loss is None else 0
+                    self.__clean_agent_step_data(agent_list)
 
                 print(f'Action{actions}  -   Loss: {last_losses}  -    Rewards: {rewards}')
-                step += 1
                 self.mh.update_metrics_after_step(rewards=rewards,
                                                   losses=last_losses,
                                                   overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
@@ -135,13 +139,15 @@ class A2CAgentMARL(Agent):
         self.mh.clean_plt_resources()
 
     def learn(self, s, a, r, s_next, k, fin, agent):
-        self.A2Cs[agent].remember_batch(states=s, actions=a, rewards=r, dones=fin)  # States should be ordered.
+        self.A2Cs[agent].remember_batch(states=s, actions=a, rewards=r, next_states=s_next, dones=fin)  # States should be ordered.
         self.A2Cs[agent].optimizer.zero_grad()
         loss = self.A2Cs[agent].calculate_loss(fin)
         loss.backward()
+        T.nn.utils.clip_grad_value_(self.A2Cs[agent].parameters(), 100)
         self.A2Cs[agent].optimizer.step()
         self.A2Cs[agent].clear_memory()
         return loss.item()
+
     def get_action(self, observation, agent):
         self.A2Cs[agent].eval()
         with T.no_grad():
@@ -155,10 +161,10 @@ class A2CAgentMARL(Agent):
             # Update history
             agent_data = self.agent_states[agent]
             agent_data['state'].append(states[idx])
-            agent_data['action'].append(actions[agent])
+            agent_data['action'].append(actions[agent][pe.ACTION_NEIGHBOUR_IDX_FIELD])
             agent_data['reward'].append(rewards[agent])
             agent_data['next_state'].append(next_states[idx])
-            agent_data['done'].append(dones[idx])
+            agent_data['done'].append(dones[agent])
             total_rwrd += rewards[agent]
         return total_rwrd
 
@@ -180,3 +186,11 @@ class A2CAgentMARL(Agent):
     def tally_actions(self, actions):
         for worker, action in actions.items():
             self.mh.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)
+
+    def check_all_done(self, dones):
+        """
+        This is possible because all the agents are done at the same time, and only when the episode ends
+        :param dones:
+        :return:
+        """
+        return any([d for d in dones.values()])

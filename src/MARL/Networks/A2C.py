@@ -12,34 +12,68 @@ class ActorCritic(nn.Module):
     - https://github.com/simoninithomas/simple-A2C/blob/master/3_A2C-nstep-TUTORIAL.ipynb
     - https://www.youtube.com/watch?v=OcIx_TBu90Q&t=1050s  | Video with tips of how to implement A3C
     - https://arxiv.org/pdf/1602.01783.pdf | Original A3C Paper
-
+    - https://github.com/hermesdt/reinforcement-learning/blob/master/a2c/cartpole_a2c_episodic.ipynb # Another implementation
+    - https://www.tensorflow.org/tutorials/reinforcement_learning/actor_critic (tensorflow)
     - https://medium.com/@asteinbach/rl-introduction-simple-actor-critic-for-continuous-actions-4e22afb712 | AC with a continuous action space.
     """
 
-    def __init__(self, lr, input_dims, fc1_dims, fc2_dims, n_actions, gamma=0.99):
+    def __init__(self, lr, input_dims, fc1_dims, fc2_dims, fc3_dims,  n_actions, gamma=0.99):
         super(ActorCritic, self).__init__()
 
         self.gamma = gamma
         self.n_actions = n_actions
 
-        self.state_memory = []
-        self.reward_memory = []
-        self.action_memory = []
-        self.done_memory = []
+        self.states = []
+        self.actions = []
+        self.rewards = []
+        self.next_states = []
+        self.dones = []
 
-        # Shared Network, both Critic and actoir have the same stump.
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
-        # Network
-        self.fc1 = nn.Linear(*self.input_dims, self.fc1_dims)
-        self.fc2 = nn.Linear(self.fc1_dims, self.fc2_dims)
-        # Actor Head:
-        self.actor = nn.Linear(self.fc2_dims, self.n_actions[0])  # Approx Policy = Outputs an Action.
-        # Critic Head:
-        self.critic = nn.Linear(self.fc2_dims, 1)  # Approx Vp = Outputs a Value Function.
+        self.fc3_dims = fc3_dims
+        self.n_actions = n_actions
 
-        self.optimizer = T.optim.Adam(self.parameters(), lr=lr)
+        # *self.input_dims is a way to unpack a list or tuple. It is equivalent to:
+        # Network
+        # L1
+        self.fc11 = nn.Linear(*self.input_dims, self.fc1_dims)
+        T.nn.init.kaiming_normal_(self.fc11.weight, nonlinearity='leaky_relu')
+        self.bn11 = nn.BatchNorm1d(self.fc1_dims)
+
+        # self.fc12 = nn.Linear(self.fc1_dims, self.fc1_dims)
+        # torch.nn.init.kaiming_normal_(self.fc12.weight, nonlinearity='leaky_relu')
+        # self.bn12 = nn.BatchNorm1d(self.fc1_dims)
+
+        # L2
+        self.fc21 = nn.Linear(self.fc1_dims, self.fc2_dims)
+        T.nn.init.kaiming_normal_(self.fc21.weight, nonlinearity='leaky_relu')
+        self.bn21 = nn.BatchNorm1d(self.fc2_dims)
+
+        # self.fc22 = nn.Linear(self.fc2_dims, self.fc2_dims)
+        # torch.nn.init.kaiming_normal_(self.fc22.weight, nonlinearity='leaky_relu')
+        # self.bn22 = nn.BatchNorm1d(self.fc2_dims)
+
+        # L3
+        self.fc31 = nn.Linear(self.fc2_dims, self.fc3_dims)
+        T.nn.init.kaiming_normal_(self.fc31.weight, nonlinearity='leaky_relu')
+        self.bn31 = nn.BatchNorm1d(self.fc3_dims)
+
+        # self.fc32 = nn.Linear(self.fc3_dims, self.fc3_dims)
+        # torch.nn.init.kaiming_normal_(self.fc32.weight, nonlinearity='leaky_relu')
+        # self.bn32 = nn.BatchNorm1d(self.fc3_dims)
+
+        # L4
+        # self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
+        # self.bn4 = nn.BatchNorm1d(self.fc4_dims)
+
+        # Actor Head:
+        self.actor = nn.Linear(self.fc3_dims, self.n_actions)  # Approx Policy = Outputs an Action.
+        # Critic Head:
+        self.critic = nn.Linear(self.fc3_dims, 1)  # Approx Vp = Outputs a Value Function.
+
+        self.optimizer = T.optim.AdamW(self.parameters(), lr=lr)
 
         # GPU support, in torch we need to specify where we are sending the Network.
         self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
@@ -47,28 +81,36 @@ class ActorCritic(nn.Module):
         self.to(self.device)
 
 
-    def remember(self, state, action, reward, done):
-        self.state_memory.append(state)
-        self.reward_memory.append(reward)
-        self.action_memory.append(action)
-        self.done_memory.append(done)
+    def remember(self, state, action, reward, next_state, done):
+        self.states.append(state)
+        self.actions.append(action)
+        self.rewards.append(reward)
+        self.next_states.append(next_state)
+        self.dones.append(done)
 
     def clear_memory(self):
-        self.state_memory = []
-        self.reward_memory = []
-        self.action_memory = []
-        self.done_memory = []
+        self.states = []
+        self.actions = []
+        self.rewards = []
+        self.next_states = []
+        self.dones = []
 
     def forward(self, state):
         # This is the forward pass of the network, it is called when we call the network with an input
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
-        layer1 = T.relu(self.fc1(state))
-        layer2 = T.relu(self.fc2(layer1))
+        layer11 = F.leaky_relu(self.fc11(state))
+        # layer12 = F.leaky_relu(self.fc12(layer11))
+        layer21 = F.leaky_relu(self.fc21(layer11))
+        # layer22 = F.leaky_relu(self.fc22(layer21))
+        last = F.leaky_relu(self.fc31(layer21))
+        # last = F.leaky_relu(self.fc32(layer31))
+        # layer4 = F.relu(self.bn4(self.fc4(layer3)))
+
         # Actor Head:
-        actor = F.relu(self.actor(layer2))
+        actor = F.relu(self.actor(last))
         # Critic Head:
-        critic = F.relu(self.critic(layer2))
+        critic = F.relu(self.critic(last))
 
         return actor, critic  # Logits, Value
 
@@ -76,57 +118,91 @@ class ActorCritic(nn.Module):
         # But he also never uses the output of actor directly.
 
     def calculate_returns(self, done):
+        """
+        Computes the n-step bootstrapped returns. Following the expression:
+        R_t = r_t + gamma * R_{t+1} + ... + gamma^n * V(s_{t+n})
+
+        Note: The formula considers that we may remain looping in the done state. This is not the case for the
+        environment, but doing only X steps in a simulation is an arbitrary decision. So bootstrap the returns
+        for the last step is not a problem.
+        :param done:
+        :return: n-step bootstrapped returns
+        """
         # Calculate the returns of the episode
-        states = T.tensor(self.state_memory, dtype=T.float)  # We must convert the state vector to a tensor
-        _, v = self.forward(states)
-        # Define last state as done, using this expression allows having t-step returns instead of episode returns.
-        R = v[-1] * (1 - int(done))
+        states = T.tensor(self.states, dtype=T.float).to(self.device)  # We must convert the state vector to a tensor
+        next_states = T.tensor(self.next_states, dtype=T.float).to(self.device)
+        _, v_t = self.forward(states)
+        _, v_t_1 = self.forward(next_states)
+        done_t = T.tensor(done, dtype=T.float).to(self.device)
+
+        returns = T.zeros_like(v_t).to(self.device)
 
         # This computes the reward/return for each time-step in the episode. This must be done from the end to the start
         # of the episode, because the return at time-step t depends on the return at time-step t+1. We then reverse the
-        # list so that the first element is the return at time-step 0.                  
-        batch_return = []
-        for reward in self.reward_memory[::-1]:
-            R = reward + self.gamma * R
-            batch_return.append(R)
-        batch_return.reverse()
-        batch_return = T.tensor(batch_return, dtype=T.float)
-        return batch_return
+        # list so that the first element is the return at time-step 0.
+        next_return = v_t_1[-1][0]
+        for t in reversed(range(len(self.rewards[0]))): # Iterate over reversed memory
+            # reward + \gamma * R_{t+1}
+            next_return = self.rewards[0][t] + self.gamma * next_return * (1 - done_t[t])
+            returns[0][t][0] = next_return
+        return returns
 
     def calculate_loss(self, done):
         # Loss: delta_teta' log(pia | s_t, teta_actor)) * A(s_t, a_t, teta_actor, teta_critic)
         # Where:
         # A(s_t, a_t; teta_actor, teta_critic) = (R_t+k * V(s_t+k; teta_critic) - V(s_t; teta_critic))
-        states = T.tensor(self.states, dtype=T.float)
-        actions = T.tensor(self.actions, dtype=T.float)
+        states = T.tensor(self.states, dtype=T.float).to(self.device)
+        actions = T.tensor(self.actions, dtype=T.float).to(self.device)
 
         returns = self.calculate_returns(done)
+        #returns = returns.to(self.device)
 
-        pi, values = self.forward(states)  # Note: This instantiates the networks.
+        pis, values = self.forward(states)  # Note: This instantiates the networks.
         values = values.squeeze()  # This removes all size one dimensions on the states tensor. Which includes the
-        critic_loss = (
-                              returns - values) ** 2  # MSQ Error between the returns at each time step and the value function at that time step.
 
-        probs = T.softmax(pi, dim=1)  # Softmax converts the output of the actor into a probability distribution.
+        critic_loss = (returns - values) ** 2  # MSQ Error between the returns at each time step and the value function at that time step.
+
+        probs = T.softmax(pis, dim=1) # .detach()  # Softmax converts the output of the actor into a probability distribution.
         dist = Categorical(probs)  # This creates a discrete distribution from the probabilities.
-        log_probs = dist.log_prob(actions)
+        log_probs = dist.log_prob(actions) #.detach()
         actor_loss = -log_probs * (returns - values)
 
         total_loss = (actor_loss + critic_loss).mean()
+        return total_loss
 
     def choose_action(self, observation):
         # This is the forward pass of the network, it is called when we call the network with an input
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
         state = T.tensor([observation], dtype=T.float).to(self.device)
-        actor, critic = self.forward(state)
-        probs = T.softmax(actor, dim=1)
+        pis, values = self.forward(state)
+        probs = T.softmax(pis, dim=1)
         dist = Categorical(probs)
-        action = dist.sample().numpy()[0]
-        return action
+        action = dist.sample()
+        return action.detach().cpu().numpy()[0]
 
-    def remember_batch(self, states, actions, rewards, dones):
-        self.state_memory.append(states)
-        self.action_memory.append(actions)
-        self.reward_memory.append(rewards)
-        self.done_memory.append(dones)
+    def remember_batch(self, states, actions, rewards, next_states,  dones):
+        self.states.append(states)
+        self.actions.append(actions)
+        self.rewards.append(rewards)
+        self.next_states.append(next_states)
+        self.dones.append(dones)
+
+    def save_checkpoint(self, filename='dqn.pth.tar', path='./models', epoch=0):
+        # This saves the network parameters
+        print('... saving checkpoint ...')
+        T.save({
+            'epoch': epoch,
+            'model_state_dict': self.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            # 'loss': self.lossFunction
+        }, os.path.join(path, filename))
+
+    def load_checkpoint(self, filename='./models/dqn.pth.tar'):
+        # This loads the network parameters
+        print('... loading checkpoint ...')
+        checkpoint = T.load(filename)
+        self.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        epoch = checkpoint['epoch']
+        # self.lossFunction = checkpoint['loss']

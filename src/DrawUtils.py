@@ -43,12 +43,12 @@ def plot_lines(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_la
         plt.plot(x_values, y_values[idx], label=y_labels[idx])
 
     # Add a title and labels for the axes
-    plt.title(plot_title)
+    # plt.title(plot_title)
     plt.xlabel(x_axis_label)
     plt.ylabel(y_axis_label)
     # Show a legend to label the lines
     plt.legend()
-    plt.savefig(f'./Plots/Output/{plot_title + prefix_plot_png}.png')
+    plt.savefig(f'./Plots/Output/{plot_title + prefix_plot_png}.png', bbox_inches=1)
     # Display the plot
     plt.show()
 

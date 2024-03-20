@@ -22,10 +22,10 @@ class ActorCritic(nn.Module):
         self.gamma = gamma
         self.n_actions = n_actions
 
-        self.state_memory = []
-        self.reward_memory = []
-        self.action_memory = []
-        self.done_memory = []
+        self.states = []
+        self.rewards = []
+        self.actions = []
+        self.dones = []
 
         # Shared Network, both Critic and actoir have the same stump.
         self.input_dims = input_dims
@@ -48,16 +48,16 @@ class ActorCritic(nn.Module):
 
 
     def remember(self, state, action, reward, done):
-        self.state_memory.append(state)
-        self.reward_memory.append(reward)
-        self.action_memory.append(action)
-        self.done_memory.append(done)
+        self.states.append(state)
+        self.rewards.append(reward)
+        self.actions.append(action)
+        self.dones.append(done)
 
     def clear_memory(self):
-        self.state_memory = []
-        self.reward_memory = []
-        self.action_memory = []
-        self.done_memory = []
+        self.states = []
+        self.rewards = []
+        self.actions = []
+        self.dones = []
 
     def forward(self, state):
         # This is the forward pass of the network, it is called when we call the network with an input
@@ -77,42 +77,41 @@ class ActorCritic(nn.Module):
 
     def calculate_returns(self, done):
         # Calculate the returns of the episode
-        states = T.tensor(self.state_memory, dtype=T.float)  # We must convert the state vector to a tensor
+        states = T.tensor(self.states, dtype=T.float).to(self.device)  # We must convert the state vector to a tensor
         _, v = self.forward(states)
         # Define last state as done, using this expression allows having t-step returns instead of episode returns.
-        R = v[-1] * (1 - int(done))
-
+        R = v[-1] * (1 - int(done[0]))
+        R = R.detach().cpu().numpy()[0][0]
         # This computes the reward/return for each time-step in the episode. This must be done from the end to the start
         # of the episode, because the return at time-step t depends on the return at time-step t+1. We then reverse the
         # list so that the first element is the return at time-step 0.                  
         batch_return = []
-        for reward in self.reward_memory[::-1]:
-            R = reward + self.gamma * R
+        for reward in self.rewards[::-1]: # Iterate over reversed memory
+            R = reward[0] + self.gamma * R
             batch_return.append(R)
         batch_return.reverse()
-        batch_return = T.tensor(batch_return, dtype=T.float)
+        batch_return = T.tensor(batch_return, dtype=T.float).to(self.device)
         return batch_return
 
     def calculate_loss(self, done):
-        # Loss: delta_teta' log(pia | s_t, teta_actor)) * A(s_t, a_t, teta_actor, teta_critic)
-        # Where:
-        # A(s_t, a_t; teta_actor, teta_critic) = (R_t+k * V(s_t+k; teta_critic) - V(s_t; teta_critic))
-        states = T.tensor(self.states, dtype=T.float)
-        actions = T.tensor(self.actions, dtype=T.float)
+        states = T.tensor(self.states, dtype=T.float).to(self.device)
+        actions = T.tensor(self.actions, dtype=T.float).to(self.device)
 
         returns = self.calculate_returns(done)
+        returns = returns.to(self.device)
 
-        pi, values = self.forward(states)  # Note: This instantiates the networks.
+        pis, values = self.forward(states)  # Note: This instantiates the networks.
         values = values.squeeze()  # This removes all size one dimensions on the states tensor. Which includes the
-        critic_loss = (
-                              returns - values) ** 2  # MSQ Error between the returns at each time step and the value function at that time step.
 
-        probs = T.softmax(pi, dim=1)  # Softmax converts the output of the actor into a probability distribution.
+        critic_loss = (returns - values) ** 2
+
+        probs = T.softmax(pis, dim=1)  # Softmax converts the output of the actor into a probability distribution.
         dist = Categorical(probs)  # This creates a discrete distribution from the probabilities.
-        log_probs = dist.log_prob(actions)
+        log_probs = dist.log_prob(actions)  # .detach()
         actor_loss = -log_probs * (returns - values)
 
         total_loss = (actor_loss + critic_loss).mean()
+        return total_loss
 
     def choose_action(self, observation):
         # This is the forward pass of the network, it is called when we call the network with an input
@@ -122,14 +121,14 @@ class ActorCritic(nn.Module):
         actor, critic = self.forward(state)
         probs = T.softmax(actor, dim=1)
         dist = Categorical(probs)
-        action = dist.sample().numpy()[0]
-        return action
+        action = dist.sample()
+        return action.detach().cpu().numpy()[0]
 
     def remember_batch(self, states, actions, rewards, dones):
-        self.state_memory.append(states)
-        self.action_memory.append(actions)
-        self.reward_memory.append(rewards)
-        self.done_memory.append(dones)
+        self.states.append(states)
+        self.actions.append(actions)
+        self.rewards.append(rewards)
+        self.dones.append(dones)
 
     def save_checkpoint(self, filename='dqn.pth.tar', path='./models', epoch=0):
         # This saves the network parameters
