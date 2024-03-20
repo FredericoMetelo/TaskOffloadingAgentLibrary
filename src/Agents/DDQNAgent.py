@@ -6,7 +6,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchsummary import summary
 
-from src.Agents.Networks.DQN import DQN
+from src.Agents.Networks.DQN_single import DQN
 from src.Utils import utils as utils
 from src.Agents.Agent import Agent
 import peersim_gym.envs.PeersimEnv as pe

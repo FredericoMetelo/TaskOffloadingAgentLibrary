@@ -6,7 +6,7 @@ from torchsummary import summary
 
 import torch as T
 from src.Agents.Agent import Agent
-from src.Agents.Networks.A2C import ActorCritic
+from src.Agents.Networks.A2C_single import ActorCritic
 from src.Utils import utils
 
 from src.Utils.MetricHelper import MetricHelper as mh

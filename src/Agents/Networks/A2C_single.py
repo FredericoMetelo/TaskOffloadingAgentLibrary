@@ -95,22 +95,28 @@ class ActorCritic(nn.Module):
 
     def calculate_loss(self, done):
         states = T.tensor(self.states, dtype=T.float).to(self.device)
-        actions = T.tensor(self.actions, dtype=T.float).to(self.device)
+        actions = T.tensor(self.actions, dtype=T.long).to(self.device)
+        rewards = T.tensor(self.rewards, dtype=T.float).to(self.device)
+        next_states = T.tensor(self.next_states, dtype=T.float).to(self.device)
+        dones = T.tensor(done, dtype=T.float).to(self.device)
 
+        # Forward pass to get actor logits and critic values
+        actor_logits, critic_values = self.forward(states)
+
+        # Compute advantages
         returns = self.calculate_returns(done)
-        returns = returns.to(self.device)
+        advantages = returns - critic_values.squeeze()
 
-        pis, values = self.forward(states)  # Note: This instantiates the networks.
-        values = values.squeeze()  # This removes all size one dimensions on the states tensor. Which includes the
+        # Actor loss
+        actor_probs = F.softmax(actor_logits, dim=1)
+        actor_loss = -T.mean(T.log(actor_probs.gather(1, actions)) * advantages.detach())
 
-        critic_loss = (returns - values) ** 2
+        # Critic loss
+        critic_loss = F.mse_loss(critic_values.squeeze(), returns.detach())
 
-        probs = T.softmax(pis, dim=1)  # Softmax converts the output of the actor into a probability distribution.
-        dist = Categorical(probs)  # This creates a discrete distribution from the probabilities.
-        log_probs = dist.log_prob(actions)  # .detach()
-        actor_loss = -log_probs * (returns - values)
+        # Total loss
+        total_loss = actor_loss + critic_loss
 
-        total_loss = (actor_loss + critic_loss).mean()
         return total_loss
 
     def choose_action(self, observation):

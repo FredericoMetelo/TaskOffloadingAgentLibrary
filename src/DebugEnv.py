@@ -266,8 +266,8 @@ if __name__ == '__main__':
                              action_space=[env.action_space(agent) for agent in env.agents],
                              output_shape=output_shape,
                              agents=env.possible_agents,
-                             gamma=0.55,
-                             steps_for_return=111,
+                             gamma=0.50,
+                             steps_for_return=11,
                              learning_rate=0.00001)
 
         warm_up_file = None

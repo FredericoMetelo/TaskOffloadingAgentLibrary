@@ -42,27 +42,27 @@ class ActorCritic(nn.Module):
         T.nn.init.kaiming_normal_(self.fc11.weight, nonlinearity='leaky_relu')
         self.bn11 = nn.BatchNorm1d(self.fc1_dims)
 
-        # self.fc12 = nn.Linear(self.fc1_dims, self.fc1_dims)
-        # torch.nn.init.kaiming_normal_(self.fc12.weight, nonlinearity='leaky_relu')
-        # self.bn12 = nn.BatchNorm1d(self.fc1_dims)
+        self.fc12 = nn.Linear(self.fc1_dims, self.fc1_dims)
+        T.nn.init.kaiming_normal_(self.fc12.weight, nonlinearity='leaky_relu')
+        self.bn12 = nn.BatchNorm1d(self.fc1_dims)
 
         # L2
         self.fc21 = nn.Linear(self.fc1_dims, self.fc2_dims)
         T.nn.init.kaiming_normal_(self.fc21.weight, nonlinearity='leaky_relu')
         self.bn21 = nn.BatchNorm1d(self.fc2_dims)
 
-        # self.fc22 = nn.Linear(self.fc2_dims, self.fc2_dims)
-        # torch.nn.init.kaiming_normal_(self.fc22.weight, nonlinearity='leaky_relu')
-        # self.bn22 = nn.BatchNorm1d(self.fc2_dims)
+        self.fc22 = nn.Linear(self.fc2_dims, self.fc2_dims)
+        T.nn.init.kaiming_normal_(self.fc22.weight, nonlinearity='leaky_relu')
+        self.bn22 = nn.BatchNorm1d(self.fc2_dims)
 
         # L3
         self.fc31 = nn.Linear(self.fc2_dims, self.fc3_dims)
         T.nn.init.kaiming_normal_(self.fc31.weight, nonlinearity='leaky_relu')
         self.bn31 = nn.BatchNorm1d(self.fc3_dims)
 
-        # self.fc32 = nn.Linear(self.fc3_dims, self.fc3_dims)
-        # torch.nn.init.kaiming_normal_(self.fc32.weight, nonlinearity='leaky_relu')
-        # self.bn32 = nn.BatchNorm1d(self.fc3_dims)
+        self.fc32 = nn.Linear(self.fc3_dims, self.fc3_dims)
+        T.nn.init.kaiming_normal_(self.fc32.weight, nonlinearity='leaky_relu')
+        self.bn32 = nn.BatchNorm1d(self.fc3_dims)
 
         # L4
         # self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)
@@ -99,12 +99,18 @@ class ActorCritic(nn.Module):
         # This is the forward pass of the network, it is called when we call the network with an input
         # It is the same as the forward pass of a normal NN. In torch we have to define the forward pass
         # but because we inherit from nn.Module, we get the backpropagation for free.
+        # Body 0
+        # layer11 = F.leaky_relu(self.fc11(state))
+        # layer21 = F.leaky_relu(self.fc21(layer11))
+        # last = F.leaky_relu(self.fc31(layer21))
+
+        # Body 1
         layer11 = F.leaky_relu(self.fc11(state))
-        # layer12 = F.leaky_relu(self.fc12(layer11))
-        layer21 = F.leaky_relu(self.fc21(layer11))
-        # layer22 = F.leaky_relu(self.fc22(layer21))
-        last = F.leaky_relu(self.fc31(layer21))
-        # last = F.leaky_relu(self.fc32(layer31))
+        layer12 = F.leaky_relu(self.fc12(layer11))
+        layer21 = F.leaky_relu(self.fc21(layer12))
+        layer22 = F.leaky_relu(self.fc22(layer21))
+        layer31 = F.leaky_relu(self.fc31(layer22))
+        last = F.leaky_relu(self.fc32(layer31))
         # layer4 = F.relu(self.bn4(self.fc4(layer3)))
 
         # Actor Head:
@@ -148,26 +154,28 @@ class ActorCritic(nn.Module):
         return returns
 
     def calculate_loss(self, done):
-        # Loss: delta_teta' log(pia | s_t, teta_actor)) * A(s_t, a_t, teta_actor, teta_critic)
-        # Where:
-        # A(s_t, a_t; teta_actor, teta_critic) = (R_t+k * V(s_t+k; teta_critic) - V(s_t; teta_critic))
         states = T.tensor(self.states, dtype=T.float).to(self.device)
-        actions = T.tensor(self.actions, dtype=T.float).to(self.device)
+        actions = T.tensor(self.actions, dtype=T.long).to(self.device)
+        # rewards = T.tensor(self.rewards, dtype=T.float).to(self.device)
+        # next_states = T.tensor(self.next_states, dtype=T.float).to(self.device)
+        # dones = T.tensor(done, dtype=T.float).to(self.device)
 
-        returns = self.calculate_returns(done)
-        #returns = returns.to(self.device)
+        # Forward pass to get actor logits and critic values
+        actor_logits, critic_values = self.forward(states)
 
-        pis, values = self.forward(states)  # Note: This instantiates the networks.
-        values = values.squeeze()  # This removes all size one dimensions on the states tensor. Which includes the
+        # Compute advantages
+        returns = self.calculate_returns(done).squeeze()
+        advantages = returns - critic_values.squeeze()
 
-        critic_loss = (returns - values) ** 2  # MSQ Error between the returns at each time step and the value function at that time step.
+        # Actor loss
+        actor_probs = F.softmax(actor_logits, dim=1)
+        actor_loss = -T.mean(T.log(actor_probs[0].gather(1, actions)) * advantages.detach())
 
-        probs = T.softmax(pis, dim=1) # .detach()  # Softmax converts the output of the actor into a probability distribution.
-        dist = Categorical(probs)  # This creates a discrete distribution from the probabilities.
-        log_probs = dist.log_prob(actions) #.detach()
-        actor_loss = -log_probs * (returns - values)
+        # Critic loss
+        critic_loss = F.mse_loss(critic_values.squeeze(), returns.detach())
 
-        total_loss = (actor_loss + critic_loss).mean()
+        # Total loss
+        total_loss = actor_loss + critic_loss
         return total_loss
 
     def choose_action(self, observation):

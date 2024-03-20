@@ -141,9 +141,9 @@ class A2CAgentMARL(Agent):
     def learn(self, s, a, r, s_next, k, fin, agent):
         self.A2Cs[agent].remember_batch(states=s, actions=a, rewards=r, next_states=s_next, dones=fin)  # States should be ordered.
         self.A2Cs[agent].optimizer.zero_grad()
-        loss = self.A2Cs[agent].calculate_loss(fin)
+        loss = -self.A2Cs[agent].calculate_loss(fin)
         loss.backward()
-        T.nn.utils.clip_grad_value_(self.A2Cs[agent].parameters(), 100)
+        T.nn.utils.clip_grad_value_(self.A2Cs[agent].parameters(), 10)
         self.A2Cs[agent].optimizer.step()
         self.A2Cs[agent].clear_memory()
         return loss.item()
