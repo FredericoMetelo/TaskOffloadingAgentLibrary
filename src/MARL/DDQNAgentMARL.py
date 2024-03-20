@@ -87,10 +87,9 @@ class DDQNAgentMARL(Agent):
     def train_loop(self, env, num_episodes, print_instead=True, controllers=None, warm_up_file=None, load_weights=None,
                    results_file=None):
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
-        self.result_file = self.file_name + '_result'
 
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
-                     file_name=results_file)
+                     file_name=results_file + "_result")
         self.dg = dg(agents=env.possible_agents)
         if warm_up_file is not None:
             self.warm_up(warm_up_file, env.possible_agents)
@@ -172,86 +171,6 @@ class DDQNAgentMARL(Agent):
         env.close()
 
 
-    def inference_loop(self, env, num_episodes, print_instead=True, controllers=None, load_weights=None, results_file=None):
-        self.result_file = self.file_name + '_result'
-
-        self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
-                     file_name=results_file)
-        self.dg = dg(agents=env.possible_agents)
-
-        if load_weights is not None:  # Not implemented for MARL yet.
-            for idx, agent in enumerate(env.possible_agents):
-                agent_w = load_weights + f"_{agent}.pth.tar"
-                self.Q_values[agent].load_checkpoint(agent_w)
-                self.target_Q_values[agent].load_checkpoint(agent_w)
-        else:
-            print("No weights to load, exiting")
-            return
-
-        for i in range(num_episodes):
-            # Prepare variables for the next run
-            dones = [False for _ in controllers]
-            agent_list = env.agents
-            step = 0
-            score = 0.0
-
-            # Reset the state
-            states, _ = env.reset()
-            states = utils.flatten_state_list(states, agent_list)
-
-            while not utils.is_done(dones):
-                print(f'Step: {step}\n')
-                # Interaction Step:
-                targets = {agent: np.floor(self.get_action(states[idx], agent)) for idx, agent in
-                           enumerate(agent_list)}
-                actions = utils.make_action(targets, agent_list)
-
-                self.tally_actions(actions)
-
-                next_states, rewards, dones, _, info = env.step(actions)
-                next_states = utils.flatten_state_list(next_states, agent_list)
-                for idx, agent in enumerate(agent_list):
-                    # Update history
-                    # self.__store_transition(states[idx], actions[agent]['neighbourIndex'], rewards[agent],
-                    #                         next_states[idx], dones[agent], agent, idx)
-                    score += rewards[agent]
-                # Advance to next iter
-                states = next_states
-
-                # Learn
-                last_losses = []
-                for agent in agent_list:
-                    # last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
-                    #                        s_next=self.new_state_memory, k=step, fin=self.terminal_memory, agent=agent)
-                    last_losses.append(0)
-
-                print(f'Action(e:{self.epsilon}) {actions}  -   Loss: {last_losses}  -    Rewards: {rewards}')
-
-                # if step != 0 and (step % self.update_interval == 0 or dones):
-                #     for agent in env.agents:
-                #         self.target_Q_values[agent].load_state_dict(self.Q_values[agent].state_dict())
-
-                step += 1
-                self.mh.update_metrics_after_step(rewards=rewards,
-                                                  losses={agent: 0 for agent in
-                                                          env.agents},
-                                                  overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
-                                                  average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
-                                                  occupancy=info[pg.STATE_G_OCCUPANCY])
-            self.mh.compile_aggregate_metrics(i, step)
-            print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
-                                                                             self.mh.episode_average_reward(i)))
-            # if i % self.save_interval == 0:
-            #     for agent in env.agents:
-            #         self.Q_values[agent].save_checkpoint(filename=f"DDQN_Q_value_{i}_{agent}.pth.tar", epoch=i)
-
-        if results_file is not None:
-            self.mh.store_as_cvs(results_file)
-        self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
-        self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
-        self.mh.clean_plt_resources()
-
-        env.close()
     def get_action(self, observation, agent, pre_train_policy=False):
         """
         This function returns the action to take given the observation. If pre_train_policy is True, then we are
@@ -391,3 +310,87 @@ class DDQNAgentMARL(Agent):
     def tally_actions(self, actions):
         for worker, action in actions.items():
             self.mh.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)
+
+
+
+
+    # def inference_loop(self, env, num_episodes, print_instead=True, controllers=None, load_weights=None, results_file=None):
+    #     self.result_file = self.file_name + '_result'
+    #
+    #     self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
+    #                  file_name=results_file)
+    #     self.dg = dg(agents=env.possible_agents)
+    #
+    #     if load_weights is not None:  # Not implemented for MARL yet.
+    #         for idx, agent in enumerate(env.possible_agents):
+    #             agent_w = load_weights + f"_{agent}.pth.tar"
+    #             self.Q_values[agent].load_checkpoint(agent_w)
+    #             self.target_Q_values[agent].load_checkpoint(agent_w)
+    #     else:
+    #         print("No weights to load, exiting")
+    #         return
+    #
+    #     for i in range(num_episodes):
+    #         # Prepare variables for the next run
+    #         dones = [False for _ in controllers]
+    #         agent_list = env.agents
+    #         step = 0
+    #         score = 0.0
+    #
+    #         # Reset the state
+    #         states, _ = env.reset()
+    #         states = utils.flatten_state_list(states, agent_list)
+    #
+    #         while not utils.is_done(dones):
+    #             print(f'Step: {step}\n')
+    #             # Interaction Step:
+    #             targets = {agent: np.floor(self.get_action(states[idx], agent)) for idx, agent in
+    #                        enumerate(agent_list)}
+    #             actions = utils.make_action(targets, agent_list)
+    #
+    #             self.tally_actions(actions)
+    #
+    #             next_states, rewards, dones, _, info = env.step(actions)
+    #             next_states = utils.flatten_state_list(next_states, agent_list)
+    #             for idx, agent in enumerate(agent_list):
+    #                 # Update history
+    #                 # self.__store_transition(states[idx], actions[agent]['neighbourIndex'], rewards[agent],
+    #                 #                         next_states[idx], dones[agent], agent, idx)
+    #                 score += rewards[agent]
+    #             # Advance to next iter
+    #             states = next_states
+    #
+    #             # Learn
+    #             last_losses = []
+    #             for agent in agent_list:
+    #                 # last_loss = self.learn(s=self.state_memory, a=self.action_memory, r=self.reward_memory,
+    #                 #                        s_next=self.new_state_memory, k=step, fin=self.terminal_memory, agent=agent)
+    #                 last_losses.append(0)
+    #
+    #             print(f'Action(e:{self.epsilon}) {actions}  -   Loss: {last_losses}  -    Rewards: {rewards}')
+    #
+    #             # if step != 0 and (step % self.update_interval == 0 or dones):
+    #             #     for agent in env.agents:
+    #             #         self.target_Q_values[agent].load_state_dict(self.Q_values[agent].state_dict())
+    #
+    #             step += 1
+    #             self.mh.update_metrics_after_step(rewards=rewards,
+    #                                               losses={agent: 0 for agent in
+    #                                                       env.agents},
+    #                                               overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
+    #                                               average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
+    #                                               occupancy=info[pg.STATE_G_OCCUPANCY])
+    #         self.mh.compile_aggregate_metrics(i, step)
+    #         print("Episode {0}/{1}, Score: {2} ({3}), AVG Score: {4}".format(i, num_episodes, score, self.epsilon,
+    #                                                                          self.mh.episode_average_reward(i)))
+    #         # if i % self.save_interval == 0:
+    #         #     for agent in env.agents:
+    #         #         self.Q_values[agent].save_checkpoint(filename=f"DDQN_Q_value_{i}_{agent}.pth.tar", epoch=i)
+    #
+    #     if results_file is not None:
+    #         self.mh.store_as_cvs(results_file)
+    #     self.mh.plot_agent_metrics(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
+    #     self.mh.plot_simulation_data(num_episodes=num_episodes, title=self.control_type, print_instead=print_instead)
+    #     self.mh.clean_plt_resources()
+    #
+    #     env.close()

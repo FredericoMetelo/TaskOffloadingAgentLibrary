@@ -26,11 +26,11 @@ class Agent(ABC):
             self.data_collector.save_to_csv(self.file_name + '.csv')
 
     @abstractmethod
-    def get_action(self, observation):
+    def get_action(self, observation, agent):
         pass
 
     @abstractmethod
-    def learn(self, s, a, r, s_next, k, fin):
+    def learn(self, s, a, r, s_next, k, fin, agent):
         pass
 
     @abstractmethod
