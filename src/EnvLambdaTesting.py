@@ -16,6 +16,7 @@ from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
+from src.MARL.PPOAgentMARL import PPOAgentMARL
 from src.Utils import utils as fl
 from src.Utils import ConfigHelper as ch
 from src.Utils import RewardShapingHelper as rshelper
@@ -198,15 +199,6 @@ if __name__ == '__main__':
         env = PeersimEnv(configs=config_dict, render_mode=render_mode, simtype=simtype, log_dir=log_dir, randomize_seed=True, phy_rs_term=phy_rs_term)
         env.reset()
 
-
-        # TODO The agent is still broken. Right now it keeps offloading to sub-optimal nodes. I believe It's not due to
-        #  the reward. It can get better rewards (less punish) in another nodes. But the agent just laser focuses on one
-        #  node, usually a bad option, made worse by the insistance of the agent on overloading the node in question. I
-        #  have messed around with distance between the nodes, and I believe the problem isn't there. Will have to move
-        #  to acessing where in the agent or the interaction loop is the problem. Pay special attention to the states +
-        #  the actions being taken, check if there is no offset, the states are the ones the agent should observe.
-        #  Confirm the reward is being properly computed.
-
         obs = env.observation_space("worker_0")
         flat_obs = fl.flatten_observation(obs.sample())
         shape_obs_flat = np.shape(flat_obs)
@@ -224,7 +216,7 @@ if __name__ == '__main__':
         alpha = 0.1
         gamma = 0.99
         epsilon = 0.1
-        num_episodes = 100
+        num_episodes = 25
 
         # For plotting metrics
         all_epochs = []
@@ -244,71 +236,70 @@ if __name__ == '__main__':
             # NN ==========================================================================
             neighbourRanks = env.neighbourMatrix
             output_shape = {agent: len(neighbourRanks[getIdFromAgent(agent)]) for agent in env.possible_agents}
-            agent = DDQNAgentMARL(input_shape=shape_obs_flat,
-                                  output_shape=output_shape,
-                                  action_spaces=[env.action_space(agent) for agent in env.agents],
-                                  batch_size=500,
-                                  epsilon_start=1.0,
-                                  epsilon_decay=(1.0 - 0.3) / (999 * 100),
-                                  epsilon_end=0.1,
-                                  gamma=0.99,
-                                  save_interval=99,
-                                  update_interval=300,
-                                  learning_rate=0.0001,
-                                  agents=env.possible_agents,
-                                  )
+            # agent = DDQNAgentMARL(input_shape=shape_obs_flat,
+            #                       output_shape=output_shape,
+            #                       action_spaces=[env.action_space(agent) for agent in env.agents],
+            #                       batch_size=500,
+            #                       epsilon_start=1.0,
+            #                       epsilon_decay=(1.0 - 0.3) / (999 * 100),
+            #                       epsilon_end=0.1,
+            #                       gamma=0.99,
+            #                       save_interval=99,
+            #                       update_interval=300,
+            #                       learning_rate=0.0001,
+            #                       agents=env.possible_agents,
+            #                       )
 
-
-            # agent = A2CAgent(input_shape=shape_obs_flat,
-            #                  action_space=env.action_space("worker_0"),
-            #                  output_shape=shape_a_flat,
-            #                  agents=env.possible_agents,
-            #                  gamma=0.55,
-            #                  steps_for_return=150,
-            #                  learning_rate=0.00001)
+            agent = PPOAgentMARL(input_shape=shape_obs_flat,
+                                 action_space=[env.action_space(agent) for agent in env.agents],
+                                 output_shape=output_shape,
+                                 agents=env.possible_agents,
+                                 gamma=0.50,
+                                 steps_for_return=11,
+                                 learning_rate=0.00001)
             #
             warm_up_file = None
             # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
             load_weights = None
             # load_weights = "./models/DDQN_Q_value_99"
             agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-                             load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train")
+                             load_weights=load_weights, results_file="./OutputData/A2C_ether_train")
 
             num_episodes = 100
-            agent.epsilon = 0.1
+            # agent.epsilon = 0.1
             agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-                             load_weights=load_weights, results_file="./OutputData/DDQN_result_ether" + suffix_for_results)
+                             load_weights=load_weights, results_file="./OutputData/A2C_ether" + suffix_for_results)
             # Baselines ===================================================================
             #
-            lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
-                                     output_shape=max_neighbours,
-                                     action_space=env.action_space("worker_0"),
-                                      collect_data=False,
-                                     agents=env.possible_agents,
-                                     file_name="./OutputData/least_queue_ether" + suffix_for_results,
-                                     plot_name="least_queue"
-                                     )
-            lq.execute_simulation(env, num_episodes, print_instead=False)
-            # #
-            rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
-                                          output_shape=max_neighbours,
-                                          action_space=env.action_space("worker_0"),
-                                          collect_data=False,
-                                          agents=env.possible_agents,
-                                          file_name="./OutputData/random_ether" + suffix_for_results,
-                                          plot_name="random"
-                                          )
-            rand.execute_simulation(env, num_episodes, print_instead=False)
-            # #
-            nothing = AlwaysLocal(input_shape=shape_obs_flat,
-                                  output_shape=max_neighbours,
-                                  action_space=env.action_space("worker_0"),
-                                  agents=env.possible_agents,
-                                  collect_data=False,
-                                  file_name="./OutputData/always_local_ether" + suffix_for_results,
-                                  plot_name="always_local"
-                                  )
-            nothing.execute_simulation(env, num_episodes, print_instead=False)
+            # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
+            #                          output_shape=max_neighbours,
+            #                          action_space=env.action_space("worker_0"),
+            #                           collect_data=False,
+            #                          agents=env.possible_agents,
+            #                          file_name="./OutputData/least_queue_ether" + suffix_for_results,
+            #                          plot_name="least_queue"
+            #                          )
+            # lq.execute_simulation(env, num_episodes, print_instead=False)
+            # # #
+            # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
+            #                               output_shape=max_neighbours,
+            #                               action_space=env.action_space("worker_0"),
+            #                               collect_data=False,
+            #                               agents=env.possible_agents,
+            #                               file_name="./OutputData/random_ether" + suffix_for_results,
+            #                               plot_name="random"
+            #                               )
+            # rand.execute_simulation(env, num_episodes, print_instead=False)
+            # # #
+            # nothing = AlwaysLocal(input_shape=shape_obs_flat,
+            #                       output_shape=max_neighbours,
+            #                       action_space=env.action_space("worker_0"),
+            #                       agents=env.possible_agents,
+            #                       collect_data=False,
+            #                       file_name="./OutputData/always_local_ether" + suffix_for_results,
+            #                       plot_name="always_local"
+            #                       )
+            # nothing.execute_simulation(env, num_episodes, print_instead=False)
             env.close()
 
             sleep(10)

@@ -27,10 +27,14 @@ class ManualSelection(ControlAlgorithm):
         self._control_type = value
 
     def select_action(self, observation, agents):
-        action = {
-            agent: int(input(f"{agent} | Enter the node to offload to: "))
-            for agent in agents
-        }
+        if input("all?") == "y":
+            a = int(input("Enter the node to offload to: "))
+            action = {agent: a for agent in agents}
+        else:
+            action = {
+                agent: int(input(f"{agent} | Enter the node to offload to: "))
+                for agent in agents
+            }
         action_type = self.control_type
         return action, action_type
 
