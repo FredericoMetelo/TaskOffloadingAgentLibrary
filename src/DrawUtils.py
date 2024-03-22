@@ -48,7 +48,7 @@ def plot_lines(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_la
     plt.ylabel(y_axis_label)
     # Show a legend to label the lines
     plt.legend()
-    plt.savefig(f'./Plots/Output/{plot_title + prefix_plot_png}.png', bbox_inches=1)
+    # plt.savefig(f'./Plots/Output/{plot_title + prefix_plot_png}.png')#, bbox_inches=1)
     # Display the plot
     plt.show()
 
@@ -657,20 +657,20 @@ def plot_per_episode(
 if __name__ == '__main__':
     # plot_all_complete_percentage_in_dir('./OutputData/StateSpaceExploration/', [2, 4, 8, 16],
     #                                     [0.0005, 0.005, 0.01, 0.05, 0.1, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-    # plot_results(least_queues='./OutputData/least_queue_ether_result_metrics',
-    #              random='./OutputData/random_ether_result_metrics',
-    #              always_local='./OutputData/always_local_ether_result_metrics',
-    #              ddqn='./OutputData/DDQN_result_ether_metrics')
+    plot_results(least_queues='./OutputData/least_queue_ether_0.5_result_metrics',
+                 random='./OutputData/random_ether_0.5_result_metrics',
+                 always_local='./OutputData/always_local_ether_0.5_result_metrics',
+                 ddqn='./OutputData/A2C_result_ether_0.5_metrics')
     # plot_per_episode(least_queues='./OutputData/least_queue_ether_result_metrics', random='./OutputData/random_ether_result_metrics', always_local='./OutputData/always_local_ether_result_metrics', ddqn='./OutputData/DDQN_result_ether_metrics')
     # plot_rewards(ddqn='./OutputData/DDQN_result_ether_train_rewards')
     # plot_pe_10_episodes(least_queues='./OutputData/least_queue_ether_result_metrics', random='./OutputData/random_ether_result_metrics', always_local='./OutputData/always_local_ether_result_metrics', ddqn='./OutputData/DDQN_result_ether_metrics')
-    plot_average_state_space_exploration(least_queues_base='./OutputData/LambdaExploration/least_queue_ether',
-                                            random_base='./OutputData/LambdaExploration/random_ether',
-                                            always_local_base='./OutputData/LambdaExploration/always_local_ether',
-                                            ddqn_base='./OutputData/LambdaExploration/DDQN_result_ether',
-                                            prefix_format='_%s_result_metrics',
-                                            x_values=[ 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
-                                            plot_dots=True, prefix_plot_png="_le_2")
+    # plot_average_state_space_exploration(least_queues_base='./OutputData/LambdaExploration/least_queue_ether',
+    #                                         random_base='./OutputData/LambdaExploration/random_ether',
+    #                                         always_local_base='./OutputData/LambdaExploration/always_local_ether',
+    #                                         ddqn_base='./OutputData/LambdaExploration/DDQN_result_ether',
+    #                                         prefix_format='_%s_result_metrics',
+    #                                         x_values=[ 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+    #                                         plot_dots=True, prefix_plot_png="_le_2")
     # plot_average_state_space_exploration(least_queues_base='./OutputData/clusters/least_queue_ether_no_clusters',
     #                                         random_base='./OutputData/clusters/random_ether_no_clusters',
     #                                         always_local_base='./OutputData/clusters/always_local_ether_no_clusters',

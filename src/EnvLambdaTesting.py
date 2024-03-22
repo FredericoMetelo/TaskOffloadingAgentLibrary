@@ -244,28 +244,28 @@ if __name__ == '__main__':
             # NN ==========================================================================
             neighbourRanks = env.neighbourMatrix
             output_shape = {agent: len(neighbourRanks[getIdFromAgent(agent)]) for agent in env.possible_agents}
-            agent = DDQNAgentMARL(input_shape=shape_obs_flat,
-                                  output_shape=output_shape,
-                                  action_spaces=[env.action_space(agent) for agent in env.agents],
-                                  batch_size=500,
-                                  epsilon_start=1.0,
-                                  epsilon_decay=(1.0 - 0.3) / (999 * 100),
-                                  epsilon_end=0.1,
-                                  gamma=0.99,
-                                  save_interval=99,
-                                  update_interval=300,
-                                  learning_rate=0.0001,
-                                  agents=env.possible_agents,
-                                  )
+            # agent = DDQNAgentMARL(input_shape=shape_obs_flat,
+            #                       output_shape=output_shape,
+            #                       action_spaces=[env.action_space(agent) for agent in env.agents],
+            #                       batch_size=500,
+            #                       epsilon_start=1.0,
+            #                       epsilon_decay=(1.0 - 0.3) / (999 * 100),
+            #                       epsilon_end=0.1,
+            #                       gamma=0.99,
+            #                       save_interval=99,
+            #                       update_interval=300,
+            #                       learning_rate=0.0001,
+            #                       agents=env.possible_agents,
+            #                       )
 
 
-            # agent = A2CAgent(input_shape=shape_obs_flat,
-            #                  action_space=env.action_space("worker_0"),
-            #                  output_shape=shape_a_flat,
-            #                  agents=env.possible_agents,
-            #                  gamma=0.55,
-            #                  steps_for_return=150,
-            #                  learning_rate=0.00001)
+            agent = A2CAgent(input_shape=shape_obs_flat,
+                             action_space=env.action_space("worker_0"),
+                             output_shape=shape_a_flat,
+                             agents=env.possible_agents,
+                             gamma=0.55,
+                             steps_for_return=150,
+                             learning_rate=0.00001)
             #
             warm_up_file = None
             # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
