@@ -198,6 +198,15 @@ if __name__ == '__main__':
         env = PeersimEnv(configs=config_dict, render_mode=render_mode, simtype=simtype, log_dir=log_dir, randomize_seed=True, phy_rs_term=phy_rs_term)
         env.reset()
 
+
+        # TODO The agent is still broken. Right now it keeps offloading to sub-optimal nodes. I believe It's not due to
+        #  the reward. It can get better rewards (less punish) in another nodes. But the agent just laser focuses on one
+        #  node, usually a bad option, made worse by the insistance of the agent on overloading the node in question. I
+        #  have messed around with distance between the nodes, and I believe the problem isn't there. Will have to move
+        #  to acessing where in the agent or the interaction loop is the problem. Pay special attention to the states +
+        #  the actions being taken, check if there is no offset, the states are the ones the agent should observe.
+        #  Confirm the reward is being properly computed.
+
         obs = env.observation_space("worker_0")
         flat_obs = fl.flatten_observation(obs.sample())
         shape_obs_flat = np.shape(flat_obs)
@@ -215,7 +224,7 @@ if __name__ == '__main__':
         alpha = 0.1
         gamma = 0.99
         epsilon = 0.1
-        num_episodes = 25
+        num_episodes = 100
 
         # For plotting metrics
         all_epochs = []

@@ -274,7 +274,7 @@ if __name__ == '__main__':
         #                  load_weights=load_weights, results_file="./OutputData/A2C_result_ether_train")
 
         num_episodes = 100
-        agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
+        agent.tran_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                          load_weights=load_weights, results_file=f"./OutputData/{agent.control_type}_result_ether" + suffix_for_results)
         # Baselines ===================================================================
         #

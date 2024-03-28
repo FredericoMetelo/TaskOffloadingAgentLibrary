@@ -15,6 +15,7 @@ from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
+from src.MARL.A2CAgentMARL import A2CAgentMARL
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.Utils import utils as fl
 from src.Utils import ConfigHelper as ch
@@ -104,7 +105,8 @@ if __name__ == '__main__':
                 "DDQN": [],
                 "least_queue": [],
                 "random": [],
-                "always_local": []
+                "always_local": [],
+                "A2C": []
             }
     lambda_var = "0.5"
     for topology_no_clusters in ["2", "3", "4"]:
@@ -195,7 +197,8 @@ if __name__ == '__main__':
         log_dir = None
 
         # render_mode = "ascii"
-        render_mode = "human"
+        # render_mode = "human"
+        render_mode = None
 
         # phy_rs_term = None
         phy_rs_term = rshelper.mean_relative_load
@@ -230,7 +233,7 @@ if __name__ == '__main__':
         alpha = 0.1
         gamma = 0.99
         epsilon = 0.1
-        num_episodes = 300
+        num_episodes = 30
 
         # For plotting metrics
         all_epochs = []
@@ -250,86 +253,86 @@ if __name__ == '__main__':
             # NN ==========================================================================
             neighbourRanks = env.neighbourMatrix
             output_shape = {agent: len(neighbourRanks[getIdFromAgent(agent)]) for agent in env.possible_agents}
-            agent = DDQNAgentMARL(input_shape=shape_obs_flat,
-                                  output_shape=output_shape,
-                                  action_spaces=[env.action_space(agent) for agent in env.agents],
-                                  # TODO: This is a hack... Fix this ffs
-                                  batch_size=500,
-                                  epsilon_start=1.0,
-                                  epsilon_decay=(1.0 - 0.3) / (999 * 100),
-                                  epsilon_end=0.1,
-                                  gamma=0.99,
-                                  save_interval=99,
-                                  update_interval=300,
-                                  learning_rate=0.0001,
-                                  agents=env.possible_agents,
-                                  )
+            # agent = DDQNAgentMARL(input_shape=shape_obs_flat,
+            #                       output_shape=output_shape,
+            #                       action_spaces=[env.action_space(agent) for agent in env.agents],
+            #                       # TODO: This is a hack... Fix this ffs
+            #                       batch_size=500,
+            #                       epsilon_start=1.0,
+            #                       epsilon_decay=(1.0 - 0.3) / (999 * 100),
+            #                       epsilon_end=0.1,
+            #                       gamma=0.99,
+            #                       save_interval=99,
+            #                       update_interval=300,
+            #                       learning_rate=0.0001,
+            #                       agents=env.possible_agents,
+            #                       )
 
-            # agent = A2CAgent(input_shape=shape_obs_flat,
-            #                  action_space=env.action_space("worker_0"),  # TODO: This is a hack... Fix this ffs
-            #                  output_shape=shape_a_flat,
-            #                  agents=env.possible_agents,
-            #                  gamma=0.55,
-            #                  steps_for_return=150,
-            #                  learning_rate=0.00001)
+            agent = A2CAgentMARL(input_shape=shape_obs_flat,
+                                 action_space=[env.action_space(agent) for agent in env.agents],
+                                 output_shape=output_shape,
+                                 agents=env.possible_agents,
+                                 gamma=0.50,
+                                 steps_for_return=11,
+                                 learning_rate=0.00001)
             #
             warm_up_file = None
             # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
             load_weights = None
             # load_weights = "./models/DDQN_Q_value_99"
             # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-            #                  load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train" + suffix_for_results)
+            #                  load_weights=load_weights, results_file="./OutputData/A2C_result_ether_train" + suffix_for_results)
 
 
             num_episodes = 100
-            agent.epsilon = 0.1
+            # agent.epsilon = 0.1
             start_time = time.time()
             agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                              load_weights=load_weights,
-                             results_file="./OutputData/DDQN_result_ether_time" + suffix_for_results)
+                             results_file="./OutputData/A2C_result_ether_time" + suffix_for_results)
             end_time = time.time()
-            time_list["DDQN"].append(end_time - start_time)
+            time_list["A2C"].append(end_time - start_time)
             # Baselines ===================================================================
             #
-            start_time = time.time()
-            lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
-                                     output_shape=max_neighbours,
-                                     action_space=env.action_space("worker_0"),
-                                      collect_data=False,
-                                     agents=env.possible_agents,
-                                     file_name="./OutputData/least_queue_ether_time" + suffix_for_results,
-                                     plot_name="least_queue"
-                                     )
-            lq.execute_simulation(env, num_episodes, print_instead=False)
-            end_time = time.time()
-            time_list["least_queue"].append(end_time - start_time)
-            # #
-
-            start_time = time.time()
-            rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
-                                          output_shape=max_neighbours,
-                                          action_space=env.action_space("worker_0"),
-                                          collect_data=False,
-                                          agents=env.possible_agents,
-                                          file_name="./OutputData/random_ether_time" + suffix_for_results,
-                                          plot_name="random"
-                                          )
-            rand.execute_simulation(env, num_episodes, print_instead=False)
-            end_time = time.time()
-            time_list["random"].append(end_time - start_time)
-
-            # #
-            start_time = time.time()
-            nothing = AlwaysLocal(input_shape=shape_obs_flat,
-                                  output_shape=max_neighbours,
-                                  action_space=env.action_space("worker_0"),
-                                  agents=env.possible_agents,
-                                  collect_data=False,
-                                  file_name="./OutputData/always_local_ether_time" + suffix_for_results,
-                                  plot_name="always_local"
-                                  )
-            nothing.execute_simulation(env, num_episodes, print_instead=False)
-            end_time = time.time()
+            # start_time = time.time()
+            # lq = LeastQueueAlgorithm(input_shape=shape_obs_flat,
+            #                          output_shape=max_neighbours,
+            #                          action_space=env.action_space("worker_0"),
+            #                           collect_data=False,
+            #                          agents=env.possible_agents,
+            #                          file_name="./OutputData/least_queue_ether_time" + suffix_for_results,
+            #                          plot_name="least_queue"
+            #                          )
+            # lq.execute_simulation(env, num_episodes, print_instead=False)
+            # end_time = time.time()
+            # time_list["least_queue"].append(end_time - start_time)
+            # # #
+            #
+            # start_time = time.time()
+            # rand = RandomControlAlgorithm(input_shape=shape_obs_flat,
+            #                               output_shape=max_neighbours,
+            #                               action_space=env.action_space("worker_0"),
+            #                               collect_data=False,
+            #                               agents=env.possible_agents,
+            #                               file_name="./OutputData/random_ether_time" + suffix_for_results,
+            #                               plot_name="random"
+            #                               )
+            # rand.execute_simulation(env, num_episodes, print_instead=False)
+            # end_time = time.time()
+            # time_list["random"].append(end_time - start_time)
+            #
+            # # #
+            # start_time = time.time()
+            # nothing = AlwaysLocal(input_shape=shape_obs_flat,
+            #                       output_shape=max_neighbours,
+            #                       action_space=env.action_space("worker_0"),
+            #                       agents=env.possible_agents,
+            #                       collect_data=False,
+            #                       file_name="./OutputData/always_local_ether_time" + suffix_for_results,
+            #                       plot_name="always_local"
+            #                       )
+            # nothing.execute_simulation(env, num_episodes, print_instead=False)
+            # end_time = time.time()
             env.close()
             sleep(10)
             print("Training finished.\n")
@@ -340,7 +343,7 @@ if __name__ == '__main__':
             if wait_on_fail:
                 input("Press enter to kill the simulation...")
             env.close()
-    json_file = "time_list.json"
+    json_file = "time_list_A2C.json"
     json.dump(time_list, open(json_file, "w"))
     # print_all_csv()
 
