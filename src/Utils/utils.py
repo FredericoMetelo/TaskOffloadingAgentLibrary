@@ -1,7 +1,5 @@
-import math
-import peersim_gym.envs.PeersimEnv as pe
-import gymnasium
 import numpy as np
+import peersim_gym.envs.PeersimEnv as pe
 
 
 def flatten_observation(observation):

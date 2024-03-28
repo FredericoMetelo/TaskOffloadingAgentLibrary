@@ -1,8 +1,4 @@
-import numpy as np
-
 from src.ControlAlgorithms.ControlAlgorithm import ControlAlgorithm
-from src.Utils import utils as fl
-import peersim_gym
 
 
 class ManualSelection(ControlAlgorithm):

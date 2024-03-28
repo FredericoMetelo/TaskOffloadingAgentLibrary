@@ -1,16 +1,12 @@
 import numpy as np
+import peersim_gym.envs.PeersimEnv as pe
+import peersim_gym.envs.PeersimEnv as pg
 from peersim_gym.envs.PeersimEnv import PeersimEnv
-from torchsummary import summary
 
-import torch as T
-
-from src.Agents.Agent import Agent
+from src.MARL.Agent import Agent
 from src.MARL.Networks.PPO import PPO
 from src.Utils import utils
-import peersim_gym.envs.PeersimEnv as pe
-
 from src.Utils.MetricHelper import MetricHelper as mh
-import peersim_gym.envs.PeersimEnv as pg
 
 
 class PPOAgentMARL(Agent):
@@ -26,6 +22,8 @@ class PPOAgentMARL(Agent):
                  steps_for_return=150, policy_clip=0.1, batch_size=64, N=2048, gae_lambda=0.95,
                  collect_data=False, save_interval=50, control_type="PPO"):
         super().__init__(input_shape, action_space, output_shape, learning_rate, collect_data=collect_data)
+        self.last_val = {agent: 0 for agent in agents}
+        self.last_prob = {agent: 0 for agent in agents}
         self.steps_for_return = steps_for_return
         self.gamma = gamma
         self.control_type = control_type
@@ -35,10 +33,12 @@ class PPOAgentMARL(Agent):
         self.policy_clip = policy_clip
         self.batch_size = batch_size
         self.N = N
-        self.gae_lambda = gae_lambda
 
         self.PPOs = {}
         self.action_shape = output_shape
+        if self.steps_for_return < self.batch_size:
+            print("Steps for return is smaller than the batch size, setting the steps for return to the batch size")
+            self.steps_for_return = self.batch_size
         for agent in self.possible_agents:
             rank = output_shape[agent]
             self.PPOs[agent] = PPO(lr=learning_rate, input_dims=self.input_shape, fc1_dims=512, fc2_dims=256, fc3_dims=128,
@@ -88,9 +88,8 @@ class PPOAgentMARL(Agent):
 
                 next_states, rewards, dones, _, info = env.step(actions)
                 next_states = utils.flatten_state_list(states=next_states, agents=agent_list)
-
                 for idx, agent in enumerate(agent_list):
-                    total_reward_in_step = self.remember(states[agent], actions[agent], rewards[idx], next_states[agent], dones[idx], agent)
+                    total_reward_in_step = self.remember(states[idx], actions[agent]['neighbourIndex'], self.last_val[agent], self.last_prob[agent], rewards[agent], next_states[idx], dones[agent], agent)
                     score += total_reward_in_step
 
                 # Advance to next iter
@@ -102,10 +101,8 @@ class PPOAgentMARL(Agent):
                     # Here we will learn the paths from all the agents
                     print("Training...")
                     for agent in agent_list:
-                        s, a, r, s_next, fin = self.__get_agent_step_data(agent)
-                        if s and a and r and s_next and fin:  # Check if fin is always not empty as well
-                            last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=agent) # Not used inside of PPO
-                            last_losses[agent] = last_loss if not last_loss is None else 0
+                        last_loss = self.learn(s=None, a=None, r=None, s_next=None, k=step, fin=None, agent=agent) # Not used inside of PPO
+                        last_losses[agent] = last_loss if not last_loss is None else 0
 
                 print(f'Action{actions}  -   Loss: {last_losses}  -    Rewards: {rewards}')
                 self.mh.update_metrics_after_step(rewards=rewards,
@@ -122,7 +119,7 @@ class PPOAgentMARL(Agent):
             self.mh.compile_aggregate_metrics(i, step)
             if i % self.save_interval == 0:
                 for agent in env.agents:
-                    self.PPOs[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}.pth.tar", epoch=i)
+                    self.PPOs[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}_{agent}.pth.tar")
 
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                        self.mh.episode_average_reward(i)))
@@ -134,13 +131,14 @@ class PPOAgentMARL(Agent):
         self.mh.clean_plt_resources()
 
     def learn(self, s, a, r, s_next, k, fin, agent):
-
         loss = self.PPOs[agent].learn()
         return loss
 
     def get_action(self, observation, agent):
         action = self.PPOs[agent].choose_action(observation)
-        return action
+        self.last_val[agent] = action[1]
+        self.last_prob[agent] = action[2]
+        return action[0]
 
 
 
@@ -156,6 +154,6 @@ class PPOAgentMARL(Agent):
         """
         return any([d for d in dones.values()])
 
-    def remember(self, state, action, reward, n_state, done, agent):
-        return self.PPOs[agent].remember(state, action, reward, n_state, done, agent)
+    def remember(self, state, action, vals, probs, reward, n_state,  done, agent):
+        return self.PPOs[agent].remember(state, action, vals, probs, reward, n_state, done, agent)
 

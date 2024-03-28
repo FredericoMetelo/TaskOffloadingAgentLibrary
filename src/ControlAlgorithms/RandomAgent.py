@@ -1,12 +1,9 @@
-import math
 import random
 
-import numpy as np
+import peersim_gym
 import peersim_gym.envs.PeersimEnv
 
 from src.ControlAlgorithms.ControlAlgorithm import ControlAlgorithm
-from src.Utils import utils as fl
-import peersim_gym
 
 
 class RandomControlAlgorithm(ControlAlgorithm):

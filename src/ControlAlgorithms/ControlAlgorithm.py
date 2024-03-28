@@ -6,13 +6,14 @@
 # https://github.com/DanielPalaio/LunarLander-v2_DeepRL/blob/main/DQN/replay_buffer.py
 
 
-from src.Utils import utils as fl, utils
-import numpy as np
-import matplotlib.pyplot as plt
 from abc import abstractmethod
-from src.Utils.MetricHelper import MetricHelper as mh
+
 import peersim_gym.envs.PeersimEnv as pg
+
+from src.Utils import utils
 from src.Utils.DatasetGen import SarsaDataCollector
+from src.Utils.MetricHelper import MetricHelper as mh
+
 
 class ControlAlgorithm:
 

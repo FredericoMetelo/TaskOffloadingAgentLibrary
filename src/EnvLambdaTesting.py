@@ -8,13 +8,12 @@ import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from matplotlib import pyplot as plt
 from time import sleep
-import Agents
-from Agents.DDQNAgent import DDQNAgent
-from src.Agents.A2CAgent import A2CAgent
+
 from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
+from src.MARL.A2CAgentMARL import A2CAgentMARL
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.MARL.PPOAgentMARL import PPOAgentMARL
 from src.Utils import utils as fl
@@ -100,7 +99,7 @@ if __name__ == '__main__':
 #TTE%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
 
 #ETS%%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-    topology_file = "./etherTopologies/one_cluste_8rpi_manual.json" # network_4_clusters.json"
+    topology_file = "./EetherTopologies/one_cluste_8rpi_manual.json" # network_4_clusters.json"
     topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
 
     manual_config = True
@@ -119,7 +118,7 @@ if __name__ == '__main__':
     manual_positions = topology_dict["positions"]
     manual_topology = topology_dict["topology"]
     controllers = topology_dict["controllers"] #  ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-    for lambda_var in ["0.05", "0.01", "0.005"]:
+    for lambda_var in ["0.05", "0.01", "0.005", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9"]:
         config_dict = ch.generate_config_dict(lambda_task_arrival_rate=lambda_var,
                                               controllers=controllers,
 
@@ -250,13 +249,13 @@ if __name__ == '__main__':
             #                       agents=env.possible_agents,
             #                       )
 
-            agent = PPOAgentMARL(input_shape=shape_obs_flat,
-                                 action_space=[env.action_space(agent) for agent in env.agents],
-                                 output_shape=output_shape,
-                                 agents=env.possible_agents,
-                                 gamma=0.50,
-                                 steps_for_return=11,
-                                 learning_rate=0.00001)
+            agent = A2CAgentMARL(input_shape=shape_obs_flat,
+                                      action_space=[env.action_space(agent) for agent in env.agents],
+                                      output_shape=output_shape,
+                                      agents=env.possible_agents,
+                                      gamma=0.50,
+                                      steps_for_return=11,
+                                      learning_rate=0.00001)
             #
             warm_up_file = None
             # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"

@@ -3,7 +3,7 @@ from peersim_gym.envs.PeersimEnv import PeersimEnv
 from torchsummary import summary
 
 import torch as T
-from src.Agents.Agent import Agent
+from src.MARL.Agent import Agent
 from src.MARL.Networks.A2C import ActorCritic
 from src.Utils import utils
 
@@ -127,7 +127,7 @@ class A2CAgentMARL(Agent):
             self.mh.compile_aggregate_metrics(i, step)
             if i % self.save_interval == 0:
                 for agent in env.agents:
-                    self.A2Cs[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}.pth.tar", epoch=i)
+                    self.A2Cs[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}_{agent}.pth.tar", epoch=i)
 
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                        self.mh.episode_average_reward(i)))

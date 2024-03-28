@@ -9,9 +9,7 @@ import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from matplotlib import pyplot as plt
 
-import src.Agents
-from  src.Agents.DDQNAgent import DDQNAgent
-from src.Agents.A2CAgent import A2CAgent
+
 from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm

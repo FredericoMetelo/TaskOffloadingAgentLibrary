@@ -41,29 +41,29 @@ class ActorCritic(nn.Module):
         # L1
         self.fc11 = nn.Linear(*self.input_dims, self.fc1_dims)
         T.nn.init.kaiming_normal_(self.fc11.weight, nonlinearity='leaky_relu')
-        self.bn11 = nn.BatchNorm1d(self.fc1_dims)
+        # self.bn11 = nn.BatchNorm1d(self.fc1_dims)
 
         self.fc12 = nn.Linear(self.fc1_dims, self.fc1_dims)
         T.nn.init.kaiming_normal_(self.fc12.weight, nonlinearity='leaky_relu')
-        self.bn12 = nn.BatchNorm1d(self.fc1_dims)
+        # self.bn12 = nn.BatchNorm1d(self.fc1_dims)
 
         # L2
         self.fc21 = nn.Linear(self.fc1_dims, self.fc2_dims)
         T.nn.init.kaiming_normal_(self.fc21.weight, nonlinearity='leaky_relu')
-        self.bn21 = nn.BatchNorm1d(self.fc2_dims)
+        # self.bn21 = nn.BatchNorm1d(self.fc2_dims)
 
         self.fc22 = nn.Linear(self.fc2_dims, self.fc2_dims)
         T.nn.init.kaiming_normal_(self.fc22.weight, nonlinearity='leaky_relu')
-        self.bn22 = nn.BatchNorm1d(self.fc2_dims)
+        # self.bn22 = nn.BatchNorm1d(self.fc2_dims)
 
         # L3
         self.fc31 = nn.Linear(self.fc2_dims, self.fc3_dims)
         T.nn.init.kaiming_normal_(self.fc31.weight, nonlinearity='leaky_relu')
-        self.bn31 = nn.BatchNorm1d(self.fc3_dims)
+        # self.bn31 = nn.BatchNorm1d(self.fc3_dims)
 
         self.fc32 = nn.Linear(self.fc3_dims, self.fc3_dims)
         T.nn.init.kaiming_normal_(self.fc32.weight, nonlinearity='leaky_relu')
-        self.bn32 = nn.BatchNorm1d(self.fc3_dims)
+        # self.bn32 = nn.BatchNorm1d(self.fc3_dims)
 
         # L4
         # self.fc4 = nn.Linear(self.fc3_dims, self.fc4_dims)

@@ -9,9 +9,6 @@ import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from matplotlib import pyplot as plt
 
-import Agents
-from Agents.DDQNAgent import DDQNAgent
-from src.Agents.A2CAgent import A2CAgent
 from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
@@ -104,9 +101,9 @@ if __name__ == '__main__':
                                           clientIsSelf=0
                                           )
     # TTE%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-    lambda_var = 0.8
+    lambda_var = 0.5
     # ETS%%%%%%%%%%%%%%%%%%%%% ETHER TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
-    # topology_file = "./etherTopologies/one_cluste_8rpi_manual.json"
+    # topology_file = "./EetherTopologies/one_cluste_8rpi_manual.json"
     # topology_dict = etr.get_topology_data(topology_file, project_coordinates=True, expected_task_size=32e7)
     #
     # manual_config = True
@@ -188,14 +185,15 @@ if __name__ == '__main__':
     wait_on_fail = False
     suffix_for_results = f"_{lambda_var}"
 
-    simtype = "basic"
-    # simtype = "basic-workload"
+    # simtype = "basic"
+    simtype = "basic-workload"
 
     # log_dir='logs/'
     log_dir = None
 
     # render_mode = "ascii"
     render_mode = "human"
+    # render_mode = None
 
     # phy_rs_term = None
     phy_rs_term = rshelper.mean_relative_load
@@ -221,7 +219,7 @@ if __name__ == '__main__':
     alpha = 0.1
     gamma = 0.99
     epsilon = 0.1
-    num_episodes = 50
+    num_episodes = 31
 
     # For plotting metrics
     all_epochs = []
@@ -258,6 +256,7 @@ if __name__ == '__main__':
         #                      output_shape=output_shape,
         #                      agents=env.possible_agents,
         #                      gamma=0.50,
+        #                      save_interval=10,
         #                      steps_for_return=11,
         #                      learning_rate=0.00001)
         agent = PPOAgentMARL(input_shape=shape_obs_flat,
@@ -265,16 +264,15 @@ if __name__ == '__main__':
                              output_shape=output_shape,
                              agents=env.possible_agents,
                              gamma=0.50,
-                             steps_for_return=11,
-                             learning_rate=0.00001)
+                             steps_for_return=256,
+                             learning_rate=0.0001)
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None
-        # load_weights = "./models/DDQN_Q_value_297"
+        # load_weights = "./models/%sPPO_value_50"
         # agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
-        #                  load_weights=load_weights, results_file="./OutputData/DDQN_result_ether_train")
+        #                  load_weights=load_weights, results_file="./OutputData/A2C_result_ether_train")
 
-        # TODO!!! -> -> IMPORTANT <- <- CHANGED THE TYPE OF TASKS FROM trace-gen to 32k size for debugging
         num_episodes = 100
         agent.train_loop(env, num_episodes, print_instead=True, controllers=controllers, warm_up_file=warm_up_file,
                          load_weights=load_weights, results_file=f"./OutputData/{agent.control_type}_result_ether" + suffix_for_results)

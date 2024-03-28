@@ -1,4 +1,3 @@
-import gymnasium
 import numpy as np
 import peersim_gym.envs.PeersimEnv as pe
 from gymnasium import Space

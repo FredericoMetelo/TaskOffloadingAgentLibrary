@@ -6,9 +6,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torchsummary import summary
 
+from src.MARL.Agent import Agent
 from src.MARL.Networks.DQN import DQN
 from src.Utils import utils as utils
-from src.Agents.Agent import Agent
 import peersim_gym.envs.PeersimEnv as pe
 from src.Utils.MetricHelper import MetricHelper as mh
 from src.Utils.DatasetGen import SarsaDataCollector as dg
