@@ -139,7 +139,10 @@ def generate_config_dict(controllers="[0]",
                          defaultCPUWorkload="2.4e+9",
                          defaultMemoryWorkload="100",
                          workloadPath=None,
-                         clientIsSelf=1
+                         clientIsSelf=1,
+                         channelTypes="PeersimSimulator.peersim.env.Transport.OpticalFiberSNR;PeersimSimulator.peersim.env.Transport.WirelessSNR",
+                         channelTypesBetweenLayers="0,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,1;-1,0,-1,-1,-1,-1,-1,-1,1,-1,-1,1;-1,-1,0,-1,-1,-1,-1,-1,1,-1,-1,1;-1,-1,-1,0,-1,-1,-1,-1,1,-1,-1,1;-1,-1,-1,-1,0,-1,-1,-1,1,-1,-1,1;-1,-1,-1,-1,-1,0,-1,-1,1,-1,-1,1;-1,-1,-1,-1,-1,-1,0,-1,1,-1,-1,1;-1,-1,-1,-1,-1,-1,-1,0,1,-1,-1,1;0,0,0,0,0,0,0,0,1,1,1,1;-1,-1,-1,-1,-1,-1,-1,-1,1,1,-1,1;-1,-1,-1,-1,-1,-1,-1,-1,1,-1,1,1;0,0,0,0,0,0,0,0,1,1,1,1",
+                         snr="45",
                          ):
     if size != sum(nodes_per_layer):
         raise Exception("Size and sum of nodes per layer must be equal")
@@ -190,8 +193,8 @@ def generate_config_dict(controllers="[0]",
         "protocol.clt.edges": "",
         "protocol.clt.minDeadline": to_string_array(task_deadlines),
         "protocol.clt.vertices": "1",
-        "protocol.clt.layersThatGetTasks": to_string_array(layersThatGetTasks),
-        "protocol.clt.clientIsSelf": str(clientIsSelf),
+        "layersThatGetTasks": to_string_array(layersThatGetTasks),
+        "clientIsSelf": str(clientIsSelf),
 
 
         "protocol.props.B": str(comm_B),
@@ -201,7 +204,7 @@ def generate_config_dict(controllers="[0]",
         "RANDOMIZEPOSITIONS": str(RANDOMIZEPOSITIONS),
         "init.Net0.POSITIONS": POSITIONS,
 
-        "RANDOMIZETOPOLOGY": str(RANDOMIZETOPOLOGY),
+                        "RANDOMIZETOPOLOGY": str(RANDOMIZETOPOLOGY),
         "init.Net1.TOPOLOGY": TOPOLOGY,
 
         "MANUAL_CONFIG": str(MANUAL_CONFIG),
@@ -213,6 +216,10 @@ def generate_config_dict(controllers="[0]",
         "protocol.clt.defaultCPUWorkload": defaultCPUWorkload,
         "protocol.clt.defaultMemoryWorkload": defaultMemoryWorkload,
         "protocol.clt.workloadPath": workloadPath,
+
+        "protocol.urt.channelTypes": channelTypes,
+        "protocol.urt.channelTypesBetweenLayers": channelTypesBetweenLayers,
+        "protocol.urt.SNR": snr,
     }
     return configs
 
