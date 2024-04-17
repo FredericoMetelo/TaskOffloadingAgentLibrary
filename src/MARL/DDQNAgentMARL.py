@@ -152,7 +152,8 @@ class DDQNAgentMARL(Agent):
                                                   occupancy=info[pg.STATE_G_OCCUPANCY],
                                                   dropped_tasks=info[pg.STATE_G_DROPPED_TASKS],
                                                   finished_tasks=info[pg.STATE_G_FINISHED_TASKS],
-                                                  total_tasks=info[pg.STATE_G_TOTAL_TASKS])
+                                                  total_tasks=info[pg.STATE_G_TOTAL_TASKS],
+                                                  consumed_energy=info[pg.STATE_G_CONSUMED_ENERGY])
 
             self.mh.print_action_density_episode()
             self.mh.compile_aggregate_metrics(i, step)

@@ -39,6 +39,10 @@ class MetricHelper:
         # last entry. Instead of saving the buckets here, I'll just substitute it for the last entry in the list.
         self.average_response_time_history = []
 
+        self.consumed_energy_per_episode = np.zeros(num_nodes)
+        self.consumed_energy_history = []
+
+
         self.tasks_dropped_per_episode = np.zeros(num_nodes)
         self.tasks_dropped_history = []
 
@@ -61,7 +65,8 @@ class MetricHelper:
         self.agents = agents
         self.file_name = file_name
 
-    def update_metrics_after_step(self, rewards, losses, overloaded_nodes, average_response_time, occupancy, dropped_tasks, finished_tasks, total_tasks):
+    def update_metrics_after_step(self, rewards, losses, overloaded_nodes, average_response_time, occupancy, dropped_tasks,
+                                  finished_tasks, total_tasks, consumed_energy):
         """
         This method is used to save the metrics after each step of the simulation.
         :param rewards:
@@ -83,6 +88,7 @@ class MetricHelper:
         self.tasks_finished_per_episode = finished_tasks
         self.tasks_dropped_per_episode = dropped_tasks
         self.tasks_total_per_episode = total_tasks
+        self.consumed_energy_per_episode = consumed_energy
         self.__update_buckets(self.overloaded_nodes_per_episode, overloaded_nodes)
         self.__update_buckets(self.occupancy_per_episode, occupancy)
         return
@@ -99,6 +105,7 @@ class MetricHelper:
         # Move the buckets for each step to the history
         self.occupancy_history.append(np.array(self.occupancy_per_episode) / no_steps)
         self.average_response_time_history.append(np.array(self.average_response_time_per_episode))
+        self.consumed_energy_history.append(np.array(self.consumed_energy_per_episode))
         self.overloaded_nodes_history.append(np.array(self.overloaded_nodes_per_episode))
 
         self.tasks_finished_history.append(np.array(self.tasks_finished_per_episode))
@@ -125,6 +132,7 @@ class MetricHelper:
 
         self.overloaded_nodes_per_episode = np.zeros(self.num_nodes)
         self.average_response_time_per_episode = np.zeros(self.num_nodes)
+        self.consumed_energy_per_episode = np.zeros(self.num_nodes)
         self.occupancy_per_episode = np.zeros(self.num_nodes)
         self.tasks_finished_per_episode = np.zeros(self.num_nodes)
         self.tasks_dropped_per_episode = np.zeros(self.num_nodes)
@@ -217,7 +225,7 @@ class MetricHelper:
             r_headers.extend([f"{agent}_loss", f"{agent}_reward"])
 
         # First file with results:
-        headers.extend(["overloaded", "occupancy", "response_time", "tasks_dropped", "tasks_finished", "tasks_total"])
+        headers.extend(["overloaded", "occupancy", "response_time", "tasks_dropped", "tasks_finished", "tasks_total", "energy_consumed"])
 
         for i in range(len(self.occupancy_history)):
             row_data = {}
@@ -228,6 +236,7 @@ class MetricHelper:
             row_data["overloaded"] = self.overloaded_nodes_history[i]
             row_data["occupancy"] = self.occupancy_history[i]
             row_data["response_time"] = self.average_response_time_history[i]
+            row_data["energy_consumed"] = self.consumed_energy_history[i]
             row_data["tasks_finished"] = self.tasks_finished_history[i]
             row_data["tasks_dropped"] = self.tasks_dropped_history[i]
             row_data["tasks_total"] = self.tasks_total_history[i]
