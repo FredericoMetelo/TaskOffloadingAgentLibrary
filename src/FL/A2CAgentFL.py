@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import numpy as np
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from torchsummary import summary
@@ -12,13 +14,12 @@ from src.Utils.MetricHelper import MetricHelper as mh
 import peersim_gym.envs.PeersimEnv as pg
 from tqdm import tqdm
 
-class A2CAgentMARL(Agent):
+class A2CAgentFL(Agent):
     """
     Actor-Critic Agent
     Sources:
     - https://www.youtube.com/watch?v=OcIx_TBu90Q&t=1050s  | Video with tips of how to implement A3C
     """
-
     def __init__(self, input_shape, action_space, output_shape, agents, learning_rate=0.7, gamma=0.4,
                  steps_for_return=150,
                  collect_data=False, save_interval=50, control_type="A2C"):
@@ -83,34 +84,54 @@ class A2CAgentMARL(Agent):
             while not utils.is_done(dones):
                 print(f'Step: {step}\n')
                 # Interaction Step:
+                cohort = self.select_cohort(agent_list) # keeping agen_list for now. Will reduce the total # of agents
+
                 targets = {agent: np.floor(self.get_action(np.array([states[idx]])[0], agent)) for idx, agent in
-                           enumerate(agent_list)}
-                actions = utils.make_action(targets, agent_list)
+                           enumerate(cohort)}
+                actions = utils.make_action(targets, cohort)
 
                 self.mh.register_actions(actions)
 
                 next_states, rewards, dones, _, info = env.step(actions)
-                next_states = utils.flatten_state_list(states=next_states, agents=agent_list)
+                next_states = utils.flatten_state_list(states=next_states, agents=cohort)
 
-                for idx, agent in enumerate(agent_list):
+                # seelct cohort:
+                for idx, agent in enumerate(cohort):
                     total_reward_in_step = self.__store_agent_step_data(states, actions, rewards, next_states, dones,
-                                                                        agent_list)
+                                                                        cohort)
                     score += total_reward_in_step
 
                 # Advance to next iter
                 states = next_states
-                last_losses = {agent: 0 for agent in agent_list}
+                last_losses = {agent: 0 for agent in cohort}
 
                 step += 1
                 if step % steps_per_return == 0 or self.check_all_done(dones):
                     # Here we will learn the paths from all the agents
                     print("Training...")
-                    for agent in agent_list:
+                    agents = []
+                    updates = []
+                    srcs = []
+                    dsts = []
+                    for agent in cohort:
                         s, a, r, s_next, fin = self.__get_agent_step_data(agent)
                         if s and a and r and s_next and fin:  # Check if fin is always not empty as well
                             last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=agent)
                             last_losses[agent] = last_loss if not last_loss is None else 0
-                    self.__clean_agent_step_data(agent_list)
+                        update = self.A2Cs[agent].state_dict()
+                        # TODO: create an entry for each agent's index to all the other agent indexe's. note that the agents always have their index right after the agent name separated by a '_'
+                        agent_idx = int(agent.split('_')[1])
+                        for other_agent in cohort:
+                            other_idx = int(other_agent.split('_')[1])
+                            if agent_idx != other_idx:
+                                agents.append(agent)
+                                srcs.append(agent_idx)
+                                dsts.append(other_idx)
+                                updates.append(update)
+                    # Each agent send's their updates to all the others
+                    env.post_updates(agents=agents, updates=updates, srcs=srcs, dsts=dsts)
+                    self.__clean_agent_step_data(cohort)
+
 
                 print(f'Action{actions}  -   Loss: {last_losses}  -    Rewards: {rewards}')
                 self.mh.update_metrics_after_step(rewards=rewards,
@@ -128,6 +149,19 @@ class A2CAgentMARL(Agent):
             if i % self.save_interval == 0:
                 for agent in env.agents:
                     self.A2Cs[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}_{agent}.pth.tar", epoch=i)
+
+            for agent in env.agents:
+                averaged_weights = OrderedDict()
+                updates_for_agent = env.get_updates(agent).append(self.A2Cs[agent].state_dict())
+                # Code from: https://github.com/Chelsiehi/FedAvg-Algorithm/blob/main/run.md
+                for it, idx in tqdm(enumerate(updates_for_agent), leave=False):
+                    local_weights = self.A2Cs[agent].state_dict()
+                    for key in self.model.state_dict().keys():
+                        if it == 0:
+                            averaged_weights[key] = 1/updates_for_agent.size() * local_weights[key] # TODO: Use coefficients for each agent instead of this... This is just dumb...
+                        else:
+                            averaged_weights[key] += 1/updates_for_agent.size() * local_weights[key] # TODO: Equally as dumb as the above line...
+                self.A2Cs[agent].load_state_dict(averaged_weights)
 
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                        self.mh.episode_average_reward(i)))
@@ -194,3 +228,6 @@ class A2CAgentMARL(Agent):
         :return:
         """
         return any([d for d in dones.values()])
+
+    def select_cohort(self, agent_list):
+        return agent_list

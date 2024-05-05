@@ -195,8 +195,8 @@ if __name__ == '__main__':
     # log_dir = None
 
     # render_mode = "ascii"
-    render_mode = "human"
-    # render_mode = None
+    # render_mode = "human"
+    render_mode = None
 
     # phy_rs_term = None
     phy_rs_term = rshelper.mean_relative_load
@@ -254,21 +254,21 @@ if __name__ == '__main__':
         #                       learning_rate=0.0001,
         #                       agents=env.possible_agents,
         #                       )
-        # agent = A2CAgentMARL(input_shape=shape_obs_flat,
-        #                      action_space=[env.action_space(agent) for agent in env.agents],
-        #                      output_shape=output_shape,
-        #                      agents=env.possible_agents,
-        #                      gamma=0.50,
-        #                      save_interval=10,
-        #                      steps_for_return=11,
-        #                      learning_rate=0.00001)
-        agent = PPOAgentMARL(input_shape=shape_obs_flat,
+        agent = A2CAgentMARL(input_shape=shape_obs_flat,
                              action_space=[env.action_space(agent) for agent in env.agents],
                              output_shape=output_shape,
                              agents=env.possible_agents,
                              gamma=0.50,
-                             steps_for_return=256,
-                             learning_rate=0.0001)
+                             save_interval=10,
+                             steps_for_return=11,
+                             learning_rate=0.00001)
+        # agent = PPOAgentMARL(input_shape=shape_obs_flat,
+        #                      action_space=[env.action_space(agent) for agent in env.agents],
+        #                      output_shape=output_shape,
+        #                      agents=env.possible_agents,
+        #                      gamma=0.50,
+        #                      steps_for_return=256,
+        #                      learning_rate=0.0001)
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None

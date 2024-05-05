@@ -204,7 +204,7 @@ def generate_config_dict(controllers="[0]",
         "RANDOMIZEPOSITIONS": str(RANDOMIZEPOSITIONS),
         "init.Net0.POSITIONS": POSITIONS,
 
-                        "RANDOMIZETOPOLOGY": str(RANDOMIZETOPOLOGY),
+        "RANDOMIZETOPOLOGY": str(RANDOMIZETOPOLOGY),
         "init.Net1.TOPOLOGY": TOPOLOGY,
 
         "MANUAL_CONFIG": str(MANUAL_CONFIG),
