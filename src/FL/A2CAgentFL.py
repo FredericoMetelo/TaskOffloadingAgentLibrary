@@ -5,7 +5,7 @@ from peersim_gym.envs.PeersimEnv import PeersimEnv
 from torchsummary import summary
 
 import torch as T
-from src.MARL.Agent import Agent
+from src.FL.FLAgent import FLAgent
 from src.MARL.Networks.A2C import ActorCritic
 from src.Utils import utils
 
@@ -14,17 +14,19 @@ from src.Utils.MetricHelper import MetricHelper as mh
 import peersim_gym.envs.PeersimEnv as pg
 from tqdm import tqdm
 
-class A2CAgentFL(Agent):
+
+class A2CAgentFL(FLAgent):
     """
     Actor-Critic Agent
     Sources:
     - https://www.youtube.com/watch?v=OcIx_TBu90Q&t=1050s  | Video with tips of how to implement A3C
     """
     def __init__(self, input_shape, action_space, output_shape, agents, learning_rate=0.7, gamma=0.4,
-                 steps_for_return=150,
-                 collect_data=False, save_interval=50, control_type="A2C"):
-        super().__init__(input_shape, action_space, output_shape, learning_rate, collect_data=collect_data)
+                 steps_for_return=150, steps_per_exchange=50,
+                 collect_data=False, save_interval=50, control_type="A2C", align_algorithm="FedAvg"):
+        super().__init__(input_shape, action_space, output_shape, learning_rate,  collect_data=collect_data, file_name=None, align_algorithm=align_algorithm)
         self.steps_for_return = steps_for_return
+        self.steps_per_exchange = steps_per_exchange
         self.gamma = gamma
         self.control_type = control_type
         self.possible_agents = agents
@@ -56,7 +58,7 @@ class A2CAgentFL(Agent):
     def train_loop(self, env: PeersimEnv, num_episodes, print_instead=True, controllers=None, warm_up_file=None,
                    load_weights=None,
                    results_file=None):
-        super().train_loop(env, num_episodes, print_instead, controllers)
+        # super().train_loop(env, num_episodes, print_instead, controllers)
         # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
 
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
@@ -65,7 +67,7 @@ class A2CAgentFL(Agent):
                      file_name=results_file + "_result")
 
         if load_weights is not None:
-            for idx, agent in enumerate(env.possible_agents):
+            for update, agent in enumerate(env.possible_agents):
                 agent_w = load_weights + f"_{agent}.pth.tar"
                 self.A2Cs[agent].load_checkpoint(agent_w)
 
@@ -106,30 +108,26 @@ class A2CAgentFL(Agent):
                 last_losses = {agent: 0 for agent in cohort}
 
                 step += 1
+                if step % self.steps_per_exchange == 0:
+                    print("Integrating updates...")
+                    for agent in env.agents:
+                        updates_for_agent = env.get_updates(agent)
+                        updates_for_agent = list(map(lambda x: x['update'], updates_for_agent))
+                        updates_for_agent.append(self.A2Cs[agent].state_dict())
+                        averaged_weights = self.align_weights(updates_for_agent)
+                        self.set_agent_model(agent, averaged_weights)
+
+
                 if step % steps_per_return == 0 or self.check_all_done(dones):
                     # Here we will learn the paths from all the agents
                     print("Training...")
-                    agents = []
-                    updates = []
-                    srcs = []
-                    dsts = []
                     for agent in cohort:
                         s, a, r, s_next, fin = self.__get_agent_step_data(agent)
                         if s and a and r and s_next and fin:  # Check if fin is always not empty as well
                             last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=agent)
                             last_losses[agent] = last_loss if not last_loss is None else 0
-                        update = self.A2Cs[agent].state_dict()
-                        # TODO: create an entry for each agent's index to all the other agent indexe's. note that the agents always have their index right after the agent name separated by a '_'
-                        agent_idx = int(agent.split('_')[1])
-                        for other_agent in cohort:
-                            other_idx = int(other_agent.split('_')[1])
-                            if agent_idx != other_idx:
-                                agents.append(agent)
-                                srcs.append(agent_idx)
-                                dsts.append(other_idx)
-                                updates.append(update)
-                    # Each agent send's their updates to all the others
-                    env.post_updates(agents=agents, updates=updates, srcs=srcs, dsts=dsts)
+                    agents, srcs, dsts, updates = self.generate_pairings(cohort)
+                    env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
                     self.__clean_agent_step_data(cohort)
 
 
@@ -150,18 +148,7 @@ class A2CAgentFL(Agent):
                 for agent in env.agents:
                     self.A2Cs[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}_{agent}.pth.tar", epoch=i)
 
-            for agent in env.agents:
-                averaged_weights = OrderedDict()
-                updates_for_agent = env.get_updates(agent).append(self.A2Cs[agent].state_dict())
-                # Code from: https://github.com/Chelsiehi/FedAvg-Algorithm/blob/main/run.md
-                for it, idx in tqdm(enumerate(updates_for_agent), leave=False):
-                    local_weights = self.A2Cs[agent].state_dict()
-                    for key in self.model.state_dict().keys():
-                        if it == 0:
-                            averaged_weights[key] = 1/updates_for_agent.size() * local_weights[key] # TODO: Use coefficients for each agent instead of this... This is just dumb...
-                        else:
-                            averaged_weights[key] += 1/updates_for_agent.size() * local_weights[key] # TODO: Equally as dumb as the above line...
-                self.A2Cs[agent].load_state_dict(averaged_weights)
+
 
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                        self.mh.episode_average_reward(i)))
@@ -231,3 +218,9 @@ class A2CAgentFL(Agent):
 
     def select_cohort(self, agent_list):
         return agent_list
+
+    def get_update_from_agent(self, agent):
+        return self.A2Cs[agent].state_dict()
+
+    def set_agent_model(self, agent, model):
+        self.A2Cs[agent].load_state_dict(model)

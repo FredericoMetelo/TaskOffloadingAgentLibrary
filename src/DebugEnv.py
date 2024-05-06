@@ -13,6 +13,7 @@ from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
+from src.FL.A2CAgentFL import A2CAgentFL
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.MARL.A2CAgentMARL import A2CAgentMARL
 from src.MARL.PPOAgentMARL import PPOAgentMARL
@@ -56,7 +57,7 @@ if __name__ == '__main__':
     # TTS%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY START %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
     POSITIONS = "18.55895350495783,17.02475796027715;47.56499372388999,57.28732691557995;5.366872150976409,43.28729893321355;17.488160666668694,29.422819514162434;81.56549175388358,53.14564532018814;85.15660881172089,74.47408014762478;18.438454887921974,44.310130148722195;72.04311826903107,62.06952644109185;25.60125368295145,15.54795598202745;17.543669122835837,70.7258178169151"
     TOPOLOGY = "0,1,2,3,6,8;1,0,2,3,4,5,6,7,8,9;2,0,1,3,6,8,9;3,0,1,2,6,8,9;4,1,5,7;5,1,4,7;6,0,1,2,3,8,9;7,1,4,5;8,0,1,2,3,6;9,1,2,3,6"
-    controllers = ["1"]  # , "5" only one for now...
+    controllers = ["0", "1"]  # , "5" only one for now...
     config_dict = ch.generate_config_dict(lambda_task_arrival_rate=0.8,
                                           controllers=controllers,
                                           # Simulation Parameters
@@ -239,7 +240,7 @@ if __name__ == '__main__':
         # manual.execute_simulation(env, num_episodes, print_instead=False)
 
         # T.cuda.is_available = lambda: False # Shenanigans for the sake of Debugging
-        # NN ==========================================================================
+        # MARL ==========================================================================
         neighbourRanks = env.neighbourMatrix
         output_shape = {agent: len(neighbourRanks[getIdFromAgent(agent)]) for agent in env.possible_agents}
         # agent = DDQNAgentMARL(input_shape=shape_obs_flat,
@@ -254,14 +255,14 @@ if __name__ == '__main__':
         #                       learning_rate=0.0001,
         #                       agents=env.possible_agents,
         #                       )
-        agent = A2CAgentMARL(input_shape=shape_obs_flat,
-                             action_space=[env.action_space(agent) for agent in env.agents],
-                             output_shape=output_shape,
-                             agents=env.possible_agents,
-                             gamma=0.50,
-                             save_interval=10,
-                             steps_for_return=11,
-                             learning_rate=0.00001)
+        # agent = A2CAgentMARL(input_shape=shape_obs_flat,
+        #                      action_space=[env.action_space(agent) for agent in env.agents],
+        #                      output_shape=output_shape,
+        #                      agents=env.possible_agents,
+        #                      gamma=0.50,
+        #                      save_interval=10,
+        #                      steps_for_return=11,
+        #                      learning_rate=0.00001)
         # agent = PPOAgentMARL(input_shape=shape_obs_flat,
         #                      action_space=[env.action_space(agent) for agent in env.agents],
         #                      output_shape=output_shape,
@@ -269,6 +270,18 @@ if __name__ == '__main__':
         #                      gamma=0.50,
         #                      steps_for_return=256,
         #                      learning_rate=0.0001)
+
+        # FL ==========================================================================++
+        agent = A2CAgentFL(input_shape=shape_obs_flat,
+                             action_space=[env.action_space(agent) for agent in env.agents],
+                             output_shape=output_shape,
+                             agents=env.possible_agents,
+                             gamma=0.50,
+                             save_interval=10,
+                             steps_for_return=11,
+                             learning_rate=0.00001)
+
+
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None
