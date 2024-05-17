@@ -1,3 +1,4 @@
+# [PeersimGym: Agent Library](https://arxiv.org/abs/2403.17637v2)
 # Introduction
 
 This repository acts as an extension to the Peersim simulator, providing a reinforcement learning environment for the simulator. The environment is designed to be used with the PettingZoo API, allowing for easy integration with existing reinforcement learning libraries.
