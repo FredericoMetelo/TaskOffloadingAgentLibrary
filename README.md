@@ -219,6 +219,9 @@ render_mode = "human"
 
 env = PeersimEnv(..., render_mode=render_mode, ...)
 ```
+
+[![Peersim Visualization: https://www.youtube.com/watch?v=sgDV2Ytavk4] (https://www.youtube.com/watch?v=sgDV2Ytavk4)
+
 # Bibtex
 @article{metelo2024peersimgym,
   title={PeersimGym: An Environment for Solving the Task Offloading Problem with Reinforcement Learning}, 
