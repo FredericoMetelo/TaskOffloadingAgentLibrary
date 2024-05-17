@@ -219,4 +219,11 @@ render_mode = "human"
 
 env = PeersimEnv(..., render_mode=render_mode, ...)
 ```
-
+# Bibtex
+@article{metelo2024peersimgym,
+  title={PeersimGym: An Environment for Solving the Task Offloading Problem with Reinforcement Learning}, 
+  author={Frederico Metelo and Stevo Racković and Pedro Ákos Costa and Cláudia Soares},
+  year={2024}, eprint={2403.17637},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG}
+}
