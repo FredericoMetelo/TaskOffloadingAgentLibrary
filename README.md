@@ -220,7 +220,8 @@ render_mode = "human"
 env = PeersimEnv(..., render_mode=render_mode, ...)
 ```
 
-[![Peersim Visualization: https://www.youtube.com/watch?v=sgDV2Ytavk4] (https://www.youtube.com/watch?v=sgDV2Ytavk4)](https://www.youtube.com/watch?v=sgDV2Ytavk4)
+A video explaining the "human" rendering mode can be observed on the following video (also available in the repository as FinalVisualization.mp4):
+[![Peersim Visualization: https://www.youtube.com/watch?v=sgDV2Ytavk4] (https://i9.ytimg.com/vi_webp/sgDV2Ytavk4/mq2.webp?sqp=CNy-nbIG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGE0gZShEMA8=&rs=AOn4CLCRFxna9ssJ_2B3UETpg4MUuG8P1Q)](https://www.youtube.com/watch?v=sgDV2Ytavk4 "PeersimGym Visualization")
 
 # Bibtex
 @article{metelo2024peersimgym,
