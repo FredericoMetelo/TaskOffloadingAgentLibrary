@@ -221,7 +221,10 @@ env = PeersimEnv(..., render_mode=render_mode, ...)
 ```
 
 A video explaining the "human" rendering mode can be observed on the following video (also available in the repository as FinalVisualization.mp4):
-[![Peersim Visualization: https://www.youtube.com/watch?v=sgDV2Ytavk4] (https://i9.ytimg.com/vi_webp/sgDV2Ytavk4/mq2.webp?sqp=CNy-nbIG-oaymwEmCMACELQB8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGE0gZShEMA8=&rs=AOn4CLCRFxna9ssJ_2B3UETpg4MUuG8P1Q)](https://www.youtube.com/watch?v=sgDV2Ytavk4 "PeersimGym Visualization")
+
+
+https://github.com/FredericoMetelo/TaskOffloadingAgentLibrary/assets/50637681/ff10c38e-7026-4199-b662-1e424fd3d43a
+
 
 # Bibtex
 @article{metelo2024peersimgym,
