@@ -61,23 +61,42 @@ class FLAgent(ABC):
                     averaged_weights[key] += 1 / no_ups * update[key]  # TODO: Equally as dumb as the above line...
         return averaged_weights
 
-    def generate_pairings(self, cohort):
+    def generate_pairings(self, cohort, controllers, type="all"):
+        """
+        Generates pairings for the agents in the cohort, aka defines who sends what to whom.
+        Currently there are two types of supported pairings:
+        - all: all agents send their updates to all other agents they can see in the cohort.
+        - random: all agents send their updates to a random agent they can see in the cohort.
+        :param cohort:
+        :param type:
+        :return:
+        """
         # Each agent sends their updates to all the others
         agents = []
         updates = []
         srcs = []
         dsts = []
-        for agent in cohort:
-            update = self.get_update_from_agent(agent)
-            # TODO: create an entry for each agent's index to all the other agent indexe's. note that the agents always have their index right after the agent name separated by a '_'
-            agent_idx = int(agent.split('_')[1])
-            for other_agent in cohort:
-                other_idx = int(other_agent.split('_')[1])
-                if agent_idx != other_idx:
-                    agents.append(agent)
-                    srcs.append(agent_idx)
-                    dsts.append(other_idx)
-                    updates.append(update)
+        if type == "all":
+            for agent in cohort:
+                update = self.get_update_from_agent(agent)
+                agent_id = int(agent.split('_')[1])
+                neighbours = controllers[agent_id]
+                for neighbour_idx in neighbours:
+                    if 0 != neighbour_idx and 1 == neighbours[neighbour_idx]:
+                        agents.append(agent)
+                        srcs.append(agent_id)
+                        dsts.append(neighbour_idx)
+                        updates.append(update)
+        elif type == "random":
+            for agent in cohort:
+                update = self.get_update_from_agent(agent)
+                agent_id = int(agent.split('_')[1])
+                known_controllers = controllers[agent_id]
+                neighbour_idx = np.random.choice()
+                agents.append(agent)
+                srcs.append(agent_id)
+                dsts.append(neighbour_idx)
+                updates.append(update)
         return agents, srcs, dsts, updates
 
 

@@ -126,7 +126,7 @@ class A2CAgentFL(FLAgent):
                         if s and a and r and s_next and fin:  # Check if fin is always not empty as well
                             last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=agent)
                             last_losses[agent] = last_loss if not last_loss is None else 0
-                    agents, srcs, dsts, updates = self.generate_pairings(cohort)
+                    agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="all")
                     env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
                     self.__clean_agent_step_data(cohort)
 
