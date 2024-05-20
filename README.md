@@ -1,3 +1,4 @@
+# [PeersimGym: Agent Library](https://arxiv.org/abs/2403.17637v2)
 # Introduction
 
 This repository acts as an extension to the Peersim simulator, providing a reinforcement learning environment for the simulator. The environment is designed to be used with the PettingZoo API, allowing for easy integration with existing reinforcement learning libraries.
@@ -220,3 +221,17 @@ render_mode = "human"
 env = PeersimEnv(..., render_mode=render_mode, ...)
 ```
 
+A video explaining the "human" rendering mode can be observed on the following video (also available in the repository as FinalVisualization.mp4):
+
+
+https://github.com/FredericoMetelo/TaskOffloadingAgentLibrary/assets/50637681/ff10c38e-7026-4199-b662-1e424fd3d43a
+
+
+# Bibtex
+@article{metelo2024peersimgym,
+  title={PeersimGym: An Environment for Solving the Task Offloading Problem with Reinforcement Learning}, 
+  author={Frederico Metelo and Stevo Racković and Pedro Ákos Costa and Cláudia Soares},
+  year={2024}, eprint={2403.17637},
+  archivePrefix={arXiv},
+  primaryClass={cs.LG}
+}
