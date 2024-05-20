@@ -75,7 +75,8 @@ class ControlAlgorithm:
                                                 occupancy=info[pg.STATE_G_OCCUPANCY],
                                                 dropped_tasks=info[pg.STATE_G_DROPPED_TASKS],
                                                 finished_tasks=info[pg.STATE_G_FINISHED_TASKS],
-                                                total_tasks=info[pg.STATE_G_TOTAL_TASKS])
+                                                total_tasks=info[pg.STATE_G_TOTAL_TASKS],
+                                                consumed_energy=info[pg.STATE_G_CONSUMED_ENERGY])
                 if self.collect_data:
                     self.data_collector.add_data_point(i, step, state, action, reward, new_state, done)
                 step += 1

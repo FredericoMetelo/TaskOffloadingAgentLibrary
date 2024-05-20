@@ -143,6 +143,8 @@ def generate_config_dict(controllers="[0]",
                          channelTypes="PeersimSimulator.peersim.env.Transport.OpticalFiberSNR;PeersimSimulator.peersim.env.Transport.WirelessSNR",
                          channelTypesBetweenLayers="0,-1,-1,-1,-1,-1,-1,-1,1,-1,-1,1;-1,0,-1,-1,-1,-1,-1,-1,1,-1,-1,1;-1,-1,0,-1,-1,-1,-1,-1,1,-1,-1,1;-1,-1,-1,0,-1,-1,-1,-1,1,-1,-1,1;-1,-1,-1,-1,0,-1,-1,-1,1,-1,-1,1;-1,-1,-1,-1,-1,0,-1,-1,1,-1,-1,1;-1,-1,-1,-1,-1,-1,0,-1,1,-1,-1,1;-1,-1,-1,-1,-1,-1,-1,0,1,-1,-1,1;0,0,0,0,0,0,0,0,1,1,1,1;-1,-1,-1,-1,-1,-1,-1,-1,1,1,-1,1;-1,-1,-1,-1,-1,-1,-1,-1,1,-1,1,1;0,0,0,0,0,0,0,0,1,1,1,1",
                          snr="45",
+                         energyCostComm="10",
+                         energyCostComp="1",
                          ):
     if size != sum(nodes_per_layer):
         raise Exception("Size and sum of nodes per layer must be equal")
@@ -220,6 +222,8 @@ def generate_config_dict(controllers="[0]",
         "protocol.urt.channelTypes": channelTypes,
         "protocol.urt.channelTypesBetweenLayers": channelTypesBetweenLayers,
         "protocol.urt.SNR": snr,
+        "protocol.wrk.energyCostComm": energyCostComm,
+        "protocol.wrk.energyCostComp": energyCostComp,
     }
     return configs
 
