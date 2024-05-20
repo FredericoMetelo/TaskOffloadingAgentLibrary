@@ -13,6 +13,7 @@ import peersim_gym.envs.PeersimEnv as pe
 from src.Utils.MetricHelper import MetricHelper as mh
 import peersim_gym.envs.PeersimEnv as pg
 from tqdm import tqdm
+from multiprocessing import Pool
 
 
 class A2CAgentFL(FLAgent):
@@ -59,7 +60,6 @@ class A2CAgentFL(FLAgent):
                    load_weights=None,
                    results_file=None):
         # super().train_loop(env, num_episodes, print_instead, controllers)
-        # See page 14 from: https://arxiv.org/pdf/1602.01783v2.pdf
 
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
         steps_per_return = self.steps_for_return
@@ -71,7 +71,7 @@ class A2CAgentFL(FLAgent):
                 agent_w = load_weights + f"_{agent}.pth.tar"
                 self.A2Cs[agent].load_checkpoint(agent_w)
 
-        for i in tqdm(range(num_episodes)):
+        for i in range(num_episodes):
             # Prepare variables for the next run
             dones = [False for _ in controllers]
             agent_list = env.agents
