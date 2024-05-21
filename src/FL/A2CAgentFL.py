@@ -97,7 +97,7 @@ class A2CAgentFL(FLAgent):
                 next_states, rewards, dones, _, info = env.step(actions)
                 next_states = utils.flatten_state_list(states=next_states, agents=cohort)
 
-                # seelct cohort:
+                # selct cohort:
                 for idx, agent in enumerate(cohort):
                     total_reward_in_step = self.__store_agent_step_data(states, actions, rewards, next_states, dones,
                                                                         cohort)
