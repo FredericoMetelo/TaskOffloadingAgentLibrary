@@ -118,6 +118,7 @@ def generate_config_dict(controllers="[0]",
                          task_deadlines=[100],
                          lambda_task_arrival_rate=0.5,
                          target_time_for_occupancy=0.5,
+                         scale=1,
 
                          comm_B=2,
                          comm_Beta1=0.001,
@@ -160,7 +161,7 @@ def generate_config_dict(controllers="[0]",
         "MAXDELAY": "0",
         "DROP": "0",
         "CONTROLLERS": make_ctr(controllers),
-
+        "SCALE": "1",
 
         "CLOUD_EXISTS": str(has_cloud),
         "NO_LAYERS": str(len(nodes_per_layer)),
