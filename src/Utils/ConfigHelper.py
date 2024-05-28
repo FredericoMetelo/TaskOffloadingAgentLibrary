@@ -161,7 +161,7 @@ def generate_config_dict(controllers="[0]",
         "MAXDELAY": "0",
         "DROP": "0",
         "CONTROLLERS": make_ctr(controllers),
-        "SCALE": "1",
+        "SCALE": str(scale),
 
         "CLOUD_EXISTS": str(has_cloud),
         "NO_LAYERS": str(len(nodes_per_layer)),

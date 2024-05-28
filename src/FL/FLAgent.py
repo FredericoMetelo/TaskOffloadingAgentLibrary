@@ -10,20 +10,21 @@ from abc import ABC, abstractmethod
 
 
 class FLAgent(ABC):
-    def __init__(self, input_shape, action_space, output_shape, learning_rate=0.7, collect_data=False, file_name=None, align_algorithm="FedAvg"):
-
+    def __init__(self, args):
         self.data_collector = None
-        self.input_shape = input_shape
-        self.action_shape = output_shape
-        self.learning_rate = learning_rate
-
-        self.action_space = action_space
-        self.actions = output_shape
+        self.input_shape = args.get('input_shape')
+        self.action_shape = args.get('output_shape')
+        self.learning_rate = args.get('learning_rate', 0.7)
+        self.action_space = args.get('action_space')
+        self.actions = args.get('output_shape')
         self.step = 0
-        self.align_algorithm = align_algorithm
+        self.align_algorithm = args.get('align_algorithm', "FedAvg")
         self.control_type = None
-        self.file_name = file_name
-        self.collect_data = collect_data
+        self.file_name = args.get('file_name')
+        self.collect_data = args.get('collect_data', False)
+        self.no_rounds = args.get('no_rounds', 10)
+        self.agents = args.get('agents')
+        self.global_id = args.get('global_id', "worker_0")
         if self.collect_data:
             print("Saving Data to CSV" + self.file_name + '.csv')
             self.data_collector.save_to_csv(self.file_name + '.csv')
@@ -37,23 +38,27 @@ class FLAgent(ABC):
         pass
 
     @abstractmethod
-    def train_loop(self, env: PeersimEnv, num_episodes, print_instead=False, controllers=None):
+    def train_loop(self, env: PeersimEnv, num_episodes, print_instead=False, controllers=None, global_id="worker_0",steps_per_synch=500):
         pass
 
     @abstractmethod
     def get_update_from_agent(self, agent):
         pass
-
+    def get_update_from_global(self,):
+        pass
     @abstractmethod
     def set_agent_model(self, agent, model):
         pass
+
+
 
     def fed_avg_align(self, updates_for_agent):
         print("Integrating updates...")
         averaged_weights = OrderedDict()
         no_ups = len(updates_for_agent)
         # Code from: https://github.com/Chelsiehi/FedAvg-Algorithm/blob/main/run.md
-        for idx, update in tqdm(enumerate(updates_for_agent), leave=False):
+        for idx, u in enumerate(updates_for_agent):
+            update = u[0]
             for key in update.keys():
                 if idx == 0:
                     averaged_weights[key] = 1 / no_ups * update[key]  # TODO: Use coefficients for each agent instead of this... This is just dumb...
@@ -61,14 +66,19 @@ class FLAgent(ABC):
                     averaged_weights[key] += 1 / no_ups * update[key]  # TODO: Equally as dumb as the above line...
         return averaged_weights
 
-    def generate_pairings(self, cohort, controllers, type="all"):
+    def generate_pairings(self, cohort, controllers, type="all", neighbourhoodMatrix=None):
         """
         Generates pairings for the agents in the cohort, aka defines who sends what to whom.
         Currently there are two types of supported pairings:
         - all: all agents send their updates to all other agents they can see in the cohort.
         - random: all agents send their updates to a random agent they can see in the cohort.
-        :param cohort:
-        :param type:
+        - global-down: global sends global model to all agents in cohort.
+        - global-up: all agents send their local solutions to the global model.
+
+        :param cohort: list of agents that will participate in the pairing.
+        :param controllers: List of indexes of known controllers for each agent.
+        :param type: the pairing mechanism to use.
+        :param neighbourhoodMatrix: the neighbourhood matrix to help the pairing mechanism.
         :return:
         """
         # Each agent sends their updates to all the others
@@ -97,6 +107,31 @@ class FLAgent(ABC):
                 srcs.append(agent_id)
                 dsts.append(neighbour_idx)
                 updates.append(update)
+        elif type == "global-up":
+            global_id_network = int(self.global_id.split('_')[1])
+            for agent in cohort:
+                update = self.get_update_from_agent(agent)
+                agent_id = int(agent.split('_')[1])
+                neighbours = controllers[agent_id]
+                neighbourhood = neighbourhoodMatrix[agent_id]
+                for neighbour_idx in neighbours:
+                    if global_id_network == neighbourhood[neighbour_idx]:
+                        agents.append(agent)
+                        srcs.append(agent_id)
+                        dsts.append(neighbour_idx)
+                        updates.append(update)
+        elif type == "global-down":
+            global_id_network = int(self.global_id.split('_')[1])
+            for agent in cohort:
+                update = self.get_update_from_global()
+                agent_id = int(agent.split('_')[1])
+                g_neighbourhood = controllers[global_id_network]
+                for neighbour_idx in g_neighbourhood:
+                    if neighbour_idx == agent_id:
+                        agents.append(self.global_id)
+                        srcs.append(global_id_network)
+                        dsts.append(neighbour_idx)
+                        updates.append(update)
         return agents, srcs, dsts, updates
 
 

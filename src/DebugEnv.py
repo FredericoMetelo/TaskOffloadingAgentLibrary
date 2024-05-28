@@ -13,7 +13,7 @@ from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
-from src.FL.A2CAgentFL import A2CAgentFL
+from src.FL.Server import Server
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.MARL.A2CAgentMARL import A2CAgentMARL
 from src.MARL.PPOAgentMARL import PPOAgentMARL
@@ -59,6 +59,7 @@ if __name__ == '__main__':
     TOPOLOGY = "0,1,2,3,6,8;1,0,2,3,4,5,6,7,8,9;2,0,1,3,6,8,9;3,0,1,2,6,8,9;4,1,5,7;5,1,4,7;6,0,1,2,3,8,9;7,1,4,5;8,0,1,2,3,6;9,1,2,3,6"
     controllers = ["0", "1"]  # , "5" only one for now...
     config_dict = ch.generate_config_dict(lambda_task_arrival_rate=0.8,
+                                          scale=10,
                                           controllers=controllers,
                                           # Simulation Parameters
                                           size=10,
@@ -196,8 +197,8 @@ if __name__ == '__main__':
     # log_dir = None
 
     # render_mode = "ascii"
-    # render_mode = "human"
-    render_mode = None
+    render_mode = "human"
+    # render_mode = None
 
     # phy_rs_term = None
     phy_rs_term = rshelper.mean_relative_load
@@ -272,15 +273,25 @@ if __name__ == '__main__':
         #                      learning_rate=0.0001)
 
         # FL ==========================================================================++
-        agent = A2CAgentFL(input_shape=shape_obs_flat,
-                             action_space=[env.action_space(agent) for agent in env.agents],
-                             output_shape=output_shape,
-                             agents=env.possible_agents,
-                             gamma=0.50,
-                             save_interval=10,
-                             steps_for_return=11,
-                             learning_rate=0.00001)
 
+        # Assuming A2CAgentFL is the subclass we are working with
+        args = {
+            'input_shape': shape_obs_flat,
+            'action_space': [env.action_space(agent) for agent in env.agents],
+            'output_shape': output_shape,
+            'agents': env.possible_agents,
+            'gamma': 0.50,
+            'save_interval': 10,
+            'steps_for_return': 11,
+            'learning_rate': 0.00001,
+            'collect_data': False,  # default value
+            'file_name': None,  # default value
+            'align_algorithm': 'FedAvg',  # default value
+            'no_rounds': 10  # default value
+        }
+
+        # Create an instance of A2CAgentFL with the args dictionary
+        agent = Server(args)
 
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"

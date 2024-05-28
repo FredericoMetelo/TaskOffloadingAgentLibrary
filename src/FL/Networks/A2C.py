@@ -22,7 +22,6 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
 
         self.gamma = gamma
-        self.n_actions = n_actions
 
         self.states = []
         self.actions = []
@@ -157,7 +156,7 @@ class ActorCritic(nn.Module):
     def calculate_loss(self, done):
 
         states = T.tensor(np.array(self.states[0]), dtype=T.float).to(self.device)
-        actions = T.tensor(self.actions, dtype=T.long).to(self.device)
+        actions = T.tensor(self.actions[0], dtype=T.long).to(self.device)
         # rewards = T.tensor(self.rewards, dtype=T.float).to(self.device)
         # next_states = T.tensor(self.next_states, dtype=T.float).to(self.device)
         # dones = T.tensor(done, dtype=T.float).to(self.device)
