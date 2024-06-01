@@ -7,6 +7,8 @@ from tqdm import tqdm
 
 from src.Utils import utils as fl
 from abc import ABC, abstractmethod
+from src.Utils import utils
+from src.Utils.printHelper import bcolors
 
 
 class FLAgent(ABC):
@@ -53,7 +55,7 @@ class FLAgent(ABC):
 
 
     def fed_avg_align(self, updates_for_agent):
-        print("Integrating updates...")
+        print(f"{bcolors.WARNING}Integrating updates...{bcolors.ENDC}")
         averaged_weights = OrderedDict()
         no_ups = len(updates_for_agent)
         # Code from: https://github.com/Chelsiehi/FedAvg-Algorithm/blob/main/run.md
@@ -144,3 +146,73 @@ class FLAgent(ABC):
                 # return fl.fed_prox_align(weights)
             case "FedScaffold":
                 raise NotImplementedError("FedScaffold not implemented yet")
+
+    def await_global_getting_local_solutions(self, cohort, env, global_id):
+        agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="global-up", neighbourhoodMatrix=env.neighbourMatrix)
+        env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
+        local_solutions, steps_comm = self.await_local_solutions_for_aligning(cohort, env, global_id)
+
+        # synched_global = []
+        # for agent in cohort:
+        #     # Pool the environment to see if the agents got the global update.
+        #     # Guarantee they all received updates.
+        #     global_models = env.get_updates(global_id)
+        #     if len(global_models) > 0:
+        #         self.models[agent].load_state_dict(global_models[0]['update'])
+        #         synched_global.append(agent)
+        #     if len(synched_global) == len(cohort):
+        #         break
+        #     env.step({})
+        #     ticks_after_first_weight += 1
+        return local_solutions, steps_comm
+
+    def await_local_solutions_for_aligning(self, cohort, env, global_id):
+        """
+        Has the global model await the arrival of the updates sent by the agent's in the cohort at the end of a round.
+        The agents may send multiple updates, but only advances after at least one update form each has arrived.
+        :param cohort:
+        :param env:
+        :param global_id:
+        :return:
+        """
+        local_solutions = {}
+        received_updates = []
+        steps_comm = 0
+        while len(received_updates) < len(cohort):
+            updates = env.get_updates(global_id)
+            for update in updates:
+                received_updates.append(update)
+                if update['agent'] in local_solutions:
+                    local_solutions[update['agent']].append(update['update'])
+                else:
+                    local_solutions[update['agent']] = [update['update']]
+            observations, rewards, terminations, truncations, info = env.step({})
+            steps_comm += 1
+            if utils.is_done(terminations):
+                print("Simulation Stopped, dropping last round.")
+                return None
+        return local_solutions, steps_comm
+
+    def await_local_models_getting_global(self, cohort, env, global_id):
+        ticks_after_first_weight = 0
+        # Sending the global model to the environment
+        agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="global-down", neighbourhoodMatrix=env.neighbourMatrix)
+        env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
+        synched_global = []
+        while len(synched_global) != len(cohort):
+            for agent in cohort:
+                # Pool the environment to see if the agents got the global update.
+                # Guarantee they all received updates.
+                global_models = env.get_updates(agent)
+                if len(global_models) > 0:
+                    for model in global_models:
+                        self.models[agent].load_state_dict(model['update'])
+                        synched_global.append(agent)
+                if len(synched_global) == len(cohort):
+                    break
+                observations, rewards, terminations, truncations, info = env.step({})
+                if utils.is_done(terminations):
+                    print("Simulation Stopped, dropping last round.")
+                    return False, ticks_after_first_weight
+            ticks_after_first_weight += 1
+        return True, ticks_after_first_weight

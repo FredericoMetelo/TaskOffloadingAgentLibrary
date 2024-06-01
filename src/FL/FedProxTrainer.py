@@ -17,6 +17,8 @@ import peersim_gym.envs.PeersimEnv as pg
 from tqdm import tqdm
 from multiprocessing import Pool
 
+from src.Utils.printHelper import bcolors
+
 
 class FedProxTrainer(FLAgent):
     """
@@ -91,14 +93,16 @@ class FedProxTrainer(FLAgent):
             states = utils.flatten_state_list(states, agent_list)
 
             while not utils.is_done(dones):
-                print(f'Step: {step}\n')
 
                 # Cohort selection:
                 cohort = self.select_cohort(agent_list)  # keeping agen_list for now. Will reduce the total # of agents
                 received_updates = {}  # await len of received_updates == len(cohort), if at least n steps. Drop the training for the agents that did not send updates.
-                self.await_local_models_getting_global(cohort, env, self.global_id)
-
-                for step in range(steps_per_return):
+                completed, steps_comm = self.await_local_models_getting_global(cohort, env, self.global_id)
+                if not completed:
+                    break
+                print(f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} downloading the global models round.")
+                step += steps_comm
+                for return_step in range(steps_per_return):
                     if utils.is_done(dones):
                         break
 
@@ -108,8 +112,9 @@ class FedProxTrainer(FLAgent):
                         actions = utils.make_action(targets, single_agent_list)
 
                         # self.mh.register_actions(actions)
-
+                        print(f'{bcolors.OKCYAN}Step: {step} {bcolors.ENDC}')
                         next_states, rewards, dones, _, info = env.step(actions)
+                        step += 1
                         next_states = utils.flatten_state_list(states=next_states, agents=cohort)
 
                         # select single_agent_list:
@@ -122,24 +127,23 @@ class FedProxTrainer(FLAgent):
                         states = next_states
                         last_losses = {agent: 0 for agent in single_agent_list}
 
-                        step += 1
-                        if step % self.steps_per_exchange == 0:
-                            print("Integrating updates...")
-                            for agent in env.agents:
-                                updates_for_agent = env.get_updates(agent)
-                                updates_for_agent = list(map(lambda x: x['update'], updates_for_agent))
-                                updates_for_agent.append(self.models[agent].state_dict())
-                                averaged_weights = self.align_weights(updates_for_agent)
-                                self.set_agent_model(agent, averaged_weights)
+                        # if step % self.steps_per_exchange == 0:
+                        #     print(f"{bcolors.WARNING}Integrating updates...{bcolors.ENDC}")
+                        #     for agent in env.agents:
+                        #         updates_for_agent = env.get_updates(agent)
+                        #         updates_for_agent = list(map(lambda x: x['update'], updates_for_agent))
+                        #         updates_for_agent.append(self.models[agent].state_dict())
+                        #         averaged_weights = self.align_weights(updates_for_agent)
+                        #         self.set_agent_model(agent, averaged_weights)
 
-                        if step % steps_per_return == 0 or self.check_all_done(dones):
+                        if return_step % steps_per_return == 0 or self.check_all_done(dones):
                             # Here we will learn the paths from all the agents
-                            print("Training...")
-                            for agent in single_agent_list:
-                                s, a, r, s_next, fin = self.__get_agent_step_data(agent)
+                            print(f"{bcolors.WARNING}Training... {bcolors.ENDC}")
+                            for ag in single_agent_list:
+                                s, a, r, s_next, fin = self.__get_agent_step_data(ag)
                                 if s and a and r and s_next and fin:  # Check if fin is always not empty as well
-                                    last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=agent)
-                                    last_losses[agent] = last_loss if not last_loss is None else 0
+                                    last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=ag)
+                                    last_losses[ag] = last_loss if not last_loss is None else 0
 
                         self.__clean_agent_step_data(single_agent_list)
 
@@ -154,7 +158,11 @@ class FedProxTrainer(FLAgent):
                                                           total_tasks=info[pg.STATE_G_TOTAL_TASKS],
                                                           consumed_energy=info[pg.STATE_G_CONSUMED_ENERGY],
                                                           agents=single_agent_list)
-                local_solutions = self.await_global_getting_local_solutions(cohort, env, self.global_id)
+                local_solutions, steps_comm = self.await_global_getting_local_solutions(cohort, env, self.global_id)
+                if local_solutions is None:
+                    break
+                print(f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} uploading the local solutions in this round.")
+                step += steps_comm
                 # align models
                 averaged_weights = self.align_weights(local_solutions.values())
                 self.global_model.load_state_dict(averaged_weights)
@@ -200,61 +208,6 @@ class FedProxTrainer(FLAgent):
             )
 
             summary(self.models[agent], input_size=self.input_shape)
-
-    def await_global_getting_local_solutions(self, cohort, env, global_id):
-        agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="global-up", neighbourhoodMatrix=env.neighbourMatrix)  # TODO broken
-        env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
-        local_solutions = self.await_local_solutions_for_aligning(cohort, env, global_id)
-        ticks_after_first_weight = 0
-
-        synched_global = []
-        for agent in cohort:
-            # Pool the environment to see if the agents got the global update.
-            # Guarantee they all received updates.
-            global_models = env.get_updates(global_id)
-            if len(global_models) > 0:
-                self.models[agent].load_state_dict(global_models[0]['update'])
-                synched_global.append(agent)
-            if len(synched_global) == len(cohort):
-                break
-            env.step({})
-            ticks_after_first_weight += 1
-        return local_solutions
-
-    def await_local_solutions_for_aligning(self, cohort, env, global_id):
-        local_solutions = {}
-        received_updates = []
-        while len(received_updates) < len(cohort):
-            updates = env.get_updates(global_id)
-            for update in updates:
-                received_updates.append(update)
-                if update['agent'] in local_solutions:
-                    local_solutions[update['agent']].append(update['update'])
-                else:
-                    local_solutions[update['agent']] = [update['update']]
-            env.step({})
-        return local_solutions
-
-    def await_local_models_getting_global(self, cohort, env, global_id):
-        ticks_after_first_weight = 0
-        # Sending the global model to the environment
-        agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="global-down", neighbourhoodMatrix=env.neighbourMatrix)
-        env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
-        synched_global = []
-        while len(synched_global) != len(cohort):
-            print(ticks_after_first_weight)
-            for agent in cohort:
-                # Pool the environment to see if the agents got the global update.
-                # Guarantee they all received updates.
-                global_models = env.get_updates(agent)
-                if len(global_models) > 0:
-                    for model in global_models:
-                        self.models[agent].load_state_dict(model['update'])
-                        synched_global.append(agent)
-                if len(synched_global) == len(cohort):
-                    break
-                env.step({})
-            ticks_after_first_weight += 1
 
     def learn(self, s, a, r, s_next, k, fin, agent):
         self.models[agent].remember_batch(states=s, actions=a, rewards=r, next_states=s_next, dones=fin)  # States should be ordered.
