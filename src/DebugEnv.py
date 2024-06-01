@@ -14,6 +14,7 @@ from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
 from src.FL.FedAvgTrainer import FedAvgTrainer
+from src.FL.FedProxTrainer import FedProxTrainer
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.MARL.A2CAgentMARL import A2CAgentMARL
 from src.MARL.PPOAgentMARL import PPOAgentMARL
@@ -193,8 +194,8 @@ if __name__ == '__main__':
     # simtype = "basic"
     simtype = "basic-workload"
 
-    log_dir='logs/'
-    # log_dir = None
+    # log_dir='logs/'
+    log_dir = None
 
     # render_mode = "ascii"
     render_mode = "human"
@@ -291,8 +292,8 @@ if __name__ == '__main__':
         }
 
         # Create an instance of A2CAgentFL with the args dictionary
-        agent = FedAvgTrainer(args)
-
+        # agent = FedAvgTrainer(args)
+        agent = FedProxTrainer(args)
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None

@@ -190,7 +190,7 @@ class FLAgent(ABC):
             steps_comm += 1
             if utils.is_done(terminations):
                 print("Simulation Stopped, dropping last round.")
-                return None
+                return None, steps_comm
         return local_solutions, steps_comm
 
     def await_local_models_getting_global(self, cohort, env, global_id):

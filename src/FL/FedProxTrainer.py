@@ -89,6 +89,7 @@ class FedProxTrainer(FLAgent):
             score = 0.0
 
             # Reset the state
+            print(f"{bcolors.FAIL} Resetting environment... {bcolors.ENDC}")
             states, _ = env.reset()
             states = utils.flatten_state_list(states, agent_list)
 
