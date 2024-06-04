@@ -22,6 +22,7 @@ class ActorCritic(nn.Module):
         super(ActorCritic, self).__init__()
 
         self.gamma = gamma
+        self.lr = lr
 
         self.states = []
         self.actions = []
@@ -215,3 +216,6 @@ class ActorCritic(nn.Module):
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         # self.lossFunction = checkpoint['loss']
+
+
+

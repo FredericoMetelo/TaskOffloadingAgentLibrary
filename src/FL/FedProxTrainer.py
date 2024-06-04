@@ -1,3 +1,4 @@
+import copy
 from collections import OrderedDict
 
 import numpy as np
@@ -41,8 +42,7 @@ class FedProxTrainer(FLAgent):
         self.possible_agents = args.get('agents')
         self.save_interval = args.get('save_interval', 50)
         self.action_shape = args.get('output_shape')
-        self.mu = args.get("mu", 0.5)
-
+        self.mu = args.get("mu", 0.75)
 
         self.amount_of_metrics = 50
         self.last_losses = np.zeros(self.amount_of_metrics)
@@ -71,7 +71,7 @@ class FedProxTrainer(FLAgent):
         self.generate_agents(env)
 
         scores, episodes, avg_scores, obj, avg_episode = [], [], [], [], []
-        steps_per_return = self.steps_for_return
+        steps_per_return = self.steps_for_return * 2
         self.mh = mh(agents=env.possible_agents, num_nodes=env.number_nodes, num_episodes=num_episodes,
                      file_name=results_file + "_result")
 
@@ -98,12 +98,12 @@ class FedProxTrainer(FLAgent):
                 # Cohort selection:
                 cohort = self.select_cohort(agent_list)  # keeping agen_list for now. Will reduce the total # of agents
                 received_updates = {}  # await len of received_updates == len(cohort), if at least n steps. Drop the training for the agents that did not send updates.
-                completed, steps_comm = self.await_local_models_getting_global(cohort, env, self.global_id)
+                completed, steps_comm = self.sync_download_global_solution(cohort, env, self.global_id)
                 if not completed:
                     break
                 print(f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} downloading the global models round.")
                 step += steps_comm
-                for return_step in range(steps_per_return):
+                for return_step in range(self.round_size):
                     if utils.is_done(dones):
                         break
 
@@ -120,7 +120,8 @@ class FedProxTrainer(FLAgent):
 
                         # select single_agent_list:
                         # for idx, agent in enumerate(single_agent_list):
-                        total_reward_in_step = self.__store_agent_step_data(states, actions, rewards, next_states, dones,
+                        total_reward_in_step = self.__store_agent_step_data(states, actions, rewards, next_states,
+                                                                            dones,
                                                                             single_agent_list)
                         score += total_reward_in_step
 
@@ -145,24 +146,25 @@ class FedProxTrainer(FLAgent):
                                 if s and a and r and s_next and fin:  # Check if fin is always not empty as well
                                     last_loss = self.learn(s=s, a=a, r=r, s_next=s_next, k=step, fin=fin, agent=ag)
                                     last_losses[ag] = last_loss if not last_loss is None else 0
-
-                        self.__clean_agent_step_data(single_agent_list)
+                            self.__clean_agent_step_data(cohort)
 
                         print(f'Action{actions}  -   Loss: {last_losses}  -    Rewards: {rewards}')
                         self.mh.update_metrics_after_step(rewards=rewards,
                                                           losses=last_losses,
                                                           overloaded_nodes=info[pg.STATE_G_OVERLOADED_NODES],
-                                                          average_response_time=info[pg.STATE_G_AVERAGE_COMPLETION_TIMES],
+                                                          average_response_time=info[
+                                                              pg.STATE_G_AVERAGE_COMPLETION_TIMES],
                                                           occupancy=info[pg.STATE_G_OCCUPANCY],
                                                           dropped_tasks=info[pg.STATE_G_DROPPED_TASKS],
                                                           finished_tasks=info[pg.STATE_G_FINISHED_TASKS],
                                                           total_tasks=info[pg.STATE_G_TOTAL_TASKS],
                                                           consumed_energy=info[pg.STATE_G_CONSUMED_ENERGY],
                                                           agents=single_agent_list)
-                local_solutions, steps_comm = self.await_global_getting_local_solutions(cohort, env, self.global_id)
+                local_solutions, steps_comm = self.sync_upload_local_solutions(cohort, env, self.global_id)
                 if local_solutions is None:
                     break
-                print(f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} uploading the local solutions in this round.")
+                print(
+                    f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} uploading the local solutions in this round.")
                 step += steps_comm
                 # align models
                 averaged_weights = self.align_weights(local_solutions.values())
@@ -173,7 +175,8 @@ class FedProxTrainer(FLAgent):
             self.mh.compile_aggregate_metrics(i, step)
             if i % self.save_interval == 0:
                 for agent in env.agents:
-                    self.models[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}_{agent}.pth.tar", epoch=i)
+                    self.models[agent].save_checkpoint(filename=f"{self.control_type}_value_{i}_{agent}.pth.tar",
+                                                       epoch=i)
 
             print("Episode {0}/{1}, Score: {2}, AVG Score: {3}".format(i, num_episodes, score,
                                                                        self.mh.episode_average_reward(i)))
@@ -211,7 +214,8 @@ class FedProxTrainer(FLAgent):
             summary(self.models[agent], input_size=self.input_shape)
 
     def learn(self, s, a, r, s_next, k, fin, agent):
-        self.models[agent].remember_batch(states=s, actions=a, rewards=r, next_states=s_next, dones=fin)  # States should be ordered.
+        self.models[agent].remember_batch(states=s, actions=a, rewards=r, next_states=s_next,
+                                          dones=fin)  # States should be ordered.
         self.models[agent].optimizer.zero_grad()
         loss = self.models[agent].calculate_loss(fin)
         # Adding the proximal term:
@@ -257,7 +261,6 @@ class FedProxTrainer(FLAgent):
                 'done': []
             }
 
-
     def proximalTerm(self, local_model, global_model):
         fed_prox_reg = 0.0
         global_weight_collector = list(global_model.cuda().parameters())
@@ -281,10 +284,11 @@ class FedProxTrainer(FLAgent):
         return agent_list
 
     def get_update_from_agent(self, agent):
-        return self.models[agent].state_dict()
+        return copy.deepcopy(self.models[agent].state_dict())
 
-    def get_update_from_global(self,):
-        return self.global_model.state_dict()
+    def get_update_from_global(self, ):
+        return copy.deepcopy(self.global_model.state_dict())
+
     def set_agent_model(self, agent, model):
         self.models[agent].load_state_dict(model)
 
@@ -302,3 +306,6 @@ class FedProxTrainer(FLAgent):
             return DQN
         else:
             raise ValueError("Model not found")
+
+    def dbg_get_grad(self, agent):
+        return {key: value for key, value in self.models[agent].named_parameters()}

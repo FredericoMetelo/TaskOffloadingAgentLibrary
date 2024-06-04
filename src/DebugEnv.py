@@ -283,8 +283,8 @@ if __name__ == '__main__':
             'agents': env.possible_agents,
             'gamma': 0.50,
             'save_interval': 10,
-            'steps_for_return': 11,
-            'learning_rate': 0.00001,
+            'steps_for_return': 100,
+            'learning_rate': 0.001,
             'collect_data': False,  # default value
             'file_name': None,  # default value
             'align_algorithm': 'FedAvg',  # default value

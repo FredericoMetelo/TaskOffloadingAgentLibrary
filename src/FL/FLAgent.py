@@ -1,6 +1,7 @@
 from collections import OrderedDict
 
 import numpy as np
+import torch.optim
 from matplotlib import pyplot as plt
 from peersim_gym.envs.PeersimEnv import PeersimEnv
 from tqdm import tqdm
@@ -10,10 +11,12 @@ from abc import ABC, abstractmethod
 from src.Utils import utils
 from src.Utils.printHelper import bcolors
 
+import copy
 
 class FLAgent(ABC):
     def __init__(self, args):
         self.data_collector = None
+        self.round_size = args.get('round_size', 1000)
         self.input_shape = args.get('input_shape')
         self.action_shape = args.get('output_shape')
         self.learning_rate = args.get('learning_rate', 0.7)
@@ -147,26 +150,8 @@ class FLAgent(ABC):
             case "FedScaffold":
                 raise NotImplementedError("FedScaffold not implemented yet")
 
-    def await_global_getting_local_solutions(self, cohort, env, global_id):
-        agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="global-up", neighbourhoodMatrix=env.neighbourMatrix)
-        env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
-        local_solutions, steps_comm = self.await_local_solutions_for_aligning(cohort, env, global_id)
 
-        # synched_global = []
-        # for agent in cohort:
-        #     # Pool the environment to see if the agents got the global update.
-        #     # Guarantee they all received updates.
-        #     global_models = env.get_updates(global_id)
-        #     if len(global_models) > 0:
-        #         self.models[agent].load_state_dict(global_models[0]['update'])
-        #         synched_global.append(agent)
-        #     if len(synched_global) == len(cohort):
-        #         break
-        #     env.step({})
-        #     ticks_after_first_weight += 1
-        return local_solutions, steps_comm
-
-    def await_local_solutions_for_aligning(self, cohort, env, global_id):
+    def sync_upload_local_solutions(self, cohort, env, global_id):
         """
         Has the global model await the arrival of the updates sent by the agent's in the cohort at the end of a round.
         The agents may send multiple updates, but only advances after at least one update form each has arrived.
@@ -175,6 +160,9 @@ class FLAgent(ABC):
         :param global_id:
         :return:
         """
+        agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="global-up", neighbourhoodMatrix=env.neighbourMatrix)
+        env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
+
         local_solutions = {}
         received_updates = []
         steps_comm = 0
@@ -193,11 +181,19 @@ class FLAgent(ABC):
                 return None, steps_comm
         return local_solutions, steps_comm
 
-    def await_local_models_getting_global(self, cohort, env, global_id):
+    def sync_download_global_solution(self, cohort, env, global_id):
+        """
+        Has the global model sent to all the clients. Awaits the models traveling through the network and then loads
+        them into their respective workers as they arrive. Only after all arrived does the training progress.
+        :param cohort:
+        :param env:
+        :param global_id:
+        :return:
+        """
         ticks_after_first_weight = 0
-        # Sending the global model to the environment
         agents, srcs, dsts, updates = self.generate_pairings(cohort, env.whichControllersMatrix, type="global-down", neighbourhoodMatrix=env.neighbourMatrix)
         env.post_updates(agents=agents, updates=updates, srcs=srcs, dst=dsts)
+
         synched_global = []
         while len(synched_global) != len(cohort):
             for agent in cohort:
@@ -207,6 +203,7 @@ class FLAgent(ABC):
                 if len(global_models) > 0:
                     for model in global_models:
                         self.models[agent].load_state_dict(model['update'])
+                        self.models[agent].optimizer = torch.optim.AdamW(self.models[agent].parameters(), self.models[agent].lr)
                         synched_global.append(agent)
                 if len(synched_global) == len(cohort):
                     break

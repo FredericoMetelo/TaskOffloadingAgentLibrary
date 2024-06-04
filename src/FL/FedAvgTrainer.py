@@ -1,3 +1,4 @@
+import copy
 from collections import OrderedDict
 
 import numpy as np
@@ -93,13 +94,13 @@ class FedAvgTrainer(FLAgent):
                 # Cohort selection:
                 cohort = self.select_cohort(agent_list)  # keeping agen_list for now. Will reduce the total # of agents
                 received_updates = {}  # await len of received_updates == len(cohort), if at least n steps. Drop the training for the agents that did not send updates.
-                completed, steps_comm = self.await_local_models_getting_global(cohort, env, self.global_id)
+                completed, steps_comm = self.sync_download_global_solution(cohort, env, self.global_id)
                 if not completed:
                     break
                 print(f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} downloading the global models round.")
                 step += steps_comm
 
-                for return_step in range(steps_per_return):
+                for return_step in range(self.round_size):
                     if utils.is_done(dones):
                          break
 
@@ -155,7 +156,7 @@ class FedAvgTrainer(FLAgent):
                                                           total_tasks=info[pg.STATE_G_TOTAL_TASKS],
                                                           consumed_energy=info[pg.STATE_G_CONSUMED_ENERGY],
                                                           agents=single_agent_list)
-                local_solutions, steps_comm = self.await_global_getting_local_solutions(cohort, env, self.global_id)
+                local_solutions, steps_comm = self.sync_upload_local_solutions(cohort, env, self.global_id)
                 if local_solutions is None:
                     break
                 print(f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} uploading the local solutions in this round.")
@@ -268,10 +269,11 @@ class FedAvgTrainer(FLAgent):
         return agent_list
 
     def get_update_from_agent(self, agent):
-        return self.models[agent].state_dict()
+        return copy.deepcopy(self.models[agent].state_dict())
 
     def get_update_from_global(self,):
-        return self.global_model.state_dict()
+        return copy.deepcopy(self.global_model.state_dict())
+
     def set_agent_model(self, agent, model):
         self.models[agent].load_state_dict(model)
 
