@@ -204,6 +204,7 @@ class FLAgent(ABC):
                     for model in global_models:
                         self.models[agent].load_state_dict(model['update'])
                         self.models[agent].optimizer = torch.optim.AdamW(self.models[agent].parameters(), self.models[agent].lr)
+                        self.models[agent].clear_memory()  # Clear stale entries when next iter. Could be using wrong action probs.
                         synched_global.append(agent)
                 if len(synched_global) == len(cohort):
                     break

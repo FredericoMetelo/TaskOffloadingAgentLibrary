@@ -97,6 +97,7 @@ class FedAvgTrainer(FLAgent):
                 completed, steps_comm = self.sync_download_global_solution(cohort, env, self.global_id)
                 if not completed:
                     break
+                self.clear_all_agent_memory()
                 print(f"Spent {bcolors.WARNING} {steps_comm} {bcolors.ENDC} downloading the global models round.")
                 step += steps_comm
 
@@ -215,7 +216,7 @@ class FedAvgTrainer(FLAgent):
         loss.backward()
         T.nn.utils.clip_grad_value_(self.models[agent].parameters(), 10)
         self.models[agent].optimizer.step()
-        self.models[agent].clear_memory()
+        self.models[agent].clear_memory()  # Test if debug any none is working properly in the blowing up scenario.
         return loss.item()
 
     def get_action(self, observation, agent):
@@ -252,6 +253,9 @@ class FedAvgTrainer(FLAgent):
                 'next_state': [],
                 'done': []
             }
+    def clear_all_agent_memory(self):
+        for agent in self.agents:
+            self.models[agent].clear_memory()  # Test if debug any none is working properly in the blowing up scenario.
 
     def tally_actions(self, actions):
         for worker, action in actions.items():
