@@ -228,10 +228,14 @@ https://github.com/FredericoMetelo/TaskOffloadingAgentLibrary/assets/50637681/ff
 
 
 # Bibtex
-@article{metelo2024peersimgym,
-  title={PeersimGym: An Environment for Solving the Task Offloading Problem with Reinforcement Learning}, 
-  author={Frederico Metelo and Stevo Racković and Pedro Ákos Costa and Cláudia Soares},
-  year={2024}, eprint={2403.17637},
-  archivePrefix={arXiv},
-  primaryClass={cs.LG}
+This work is based on our paper accepted at European Conference on Machine Learning and Principles and Practice of Knowledge Discovery in Databases (ECMLPKDD 2024): https://arxiv.org/abs/2403.17637
+
+If you find this useful, consider citing:
+```
+@inproceedings{metelo2024peersimgym,
+      title={PeersimGym: An Environment for Solving the Task Offloading Problem with Reinforcement Learning}, 
+      author={Frederico Metelo and Stevo Racković and Pedro Ákos Costa and Cláudia Soares},
+      booktitle={ECML/PKDD},
+      year={2024}
 }
+```
