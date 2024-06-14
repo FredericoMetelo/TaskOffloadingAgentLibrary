@@ -186,6 +186,7 @@ class ActorCritic(nn.Module):
         # but because we inherit from nn.Module, we get the backpropagation for free.
         state = T.tensor(observation, dtype=T.float).to(self.device)
         pis, values = self.forward(state)
+        pis += 1e-10  # Guarantee it will never be 0
         probs = T.softmax(pis, dim=0)
         dist = Categorical(probs)
         action = dist.sample()
@@ -216,6 +217,13 @@ class ActorCritic(nn.Module):
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         epoch = checkpoint['epoch']
         # self.lossFunction = checkpoint['loss']
+
+
+    def debug_any_none(self):
+        any_none = False
+        for w in self.parameters():
+            if T.isnan(w).any() or T.isinf(w).any():
+                return True
 
 
 
