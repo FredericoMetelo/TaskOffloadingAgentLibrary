@@ -224,6 +224,7 @@ class FedProxTrainer(FLAgent):
         T.nn.utils.clip_grad_value_(self.models[agent].parameters(), 10)
         self.models[agent].optimizer.step()
         self.models[agent].clear_memory()
+        stop = np.any([T.any(T.isnan(t)).item() for t in self.models[agent].parameters()])
         return loss.item()
 
     def get_action(self, observation, agent):

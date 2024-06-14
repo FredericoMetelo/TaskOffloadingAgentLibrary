@@ -29,7 +29,7 @@ def process_string_array_entry(array):
     return re.sub(',+', ',', re.sub(' +', ',', array.replace('\n', ' ')).replace('[,', '[').replace(',]', ']'))
 
 
-def plot_lines(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_label, convert_to_float=False, plot_dots=False, force_int=False, prefix_plot_png="", force_y_axisticks=None):
+def plot_lines(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_label, convert_to_float=False, plot_dots=False, force_int=False, prefix_plot_png="", force_y_axisticks=None, force_xaxisticks=None):
     # Convert the y values to float arrays
     if convert_to_float:
         for idx in range(len(y_values)):
@@ -58,9 +58,13 @@ def plot_lines(x_values, y_values, y_labels, plot_title, x_axis_label, y_axis_la
         plt.yticks(force_y_axisticks, fontsize=fontsize_axis)
     else:
         plt.yticks(fontsize=fontsize_axis)
+    if force_xaxisticks is not None:
+        plt.xticks(force_xaxisticks, fontsize=fontsize_axis)
+
+
     plt.tight_layout()
     plt.legend(fontsize=fontsize_legend)
-    plt.savefig(f'./Plots/Output/{plot_title + prefix_plot_png}.png', bbox_inches='tight', )
+    plt.savefig(f'./Plots/Output/{plot_title + prefix_plot_png}.pdf', bbox_inches='tight', )
     plt.show()
 
 
@@ -627,18 +631,18 @@ def plot_average_state_space_exploration(least_queues_base, random_base, always_
                           always_local_avg_for_x['overloaded'], ddqn_avg_for_x['overloaded'], A2C_avg_for_x['overloaded']],
                ['Least Queues', 'Random', 'Always Local', 'DDQN', 'A2C'], 'Overloaded',  x_label,'Overloaded',
                convert_to_float=True, plot_dots=plot_dots,  force_int=force_int, prefix_plot_png=prefix_plot_png,
-               force_y_axisticks=[0, 50, 100, 150])
+               force_y_axisticks=[0, 50, 100, 150, 200, 250], force_xaxisticks=[0.2,0.4,0.6,0.8])
 
     plot_lines(x_values, [least_queues_avg_for_x['response_time'], random_avg_for_x['response_time'],
                           always_local_avg_for_x['response_time'], ddqn_avg_for_x['response_time'], A2C_avg_for_x['response_time']],
                ['Least Queues', 'Random', 'Always Local', 'DDQN', 'A2C'], 'Response Time',  x_label, 'Response Time',
                convert_to_float=True, plot_dots=plot_dots,  force_int=force_int, prefix_plot_png=prefix_plot_png, force_y_axisticks=[20, 25, 30])
 
+
     plot_lines(x_values,
                [least_queues_avg_for_x['dropped'], random_avg_for_x['dropped'], always_local_avg_for_x['dropped'],
                 ddqn_avg_for_x['dropped'], A2C_avg_for_x['dropped']], ['Least Queues', 'Random', 'Always Local', 'DDQN', 'A2C'], 'Dropped',  x_label,
-               'Dropped', convert_to_float=True, plot_dots=plot_dots,  force_int=force_int, prefix_plot_png=prefix_plot_png)
-
+               'Dropped', convert_to_float=True, plot_dots=plot_dots,  force_int=force_int, prefix_plot_png=prefix_plot_png, force_xaxisticks=[0.2,0.4,0.6,0.8])
     plot_lines(x_values,
                [least_queues_avg_for_x['finished'], random_avg_for_x['finished'], always_local_avg_for_x['finished'],
                 ddqn_avg_for_x['finished'], A2C_avg_for_x['finished']], ['Least Queues', 'Random', 'Always Local', 'DDQN', 'A2C'], 'Finished',  x_label,
@@ -725,13 +729,13 @@ if __name__ == '__main__':
                                             a2c_base='./OutputData/LambdaExploration/A2C_ether',
                                             prefix_format='_%s_result_metrics',
                                             x_label="Lambda",
-                                            x_values=[ 0.1, 0.3, 0.5, 0.7, 0.9],
+                                            x_values=[ 0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
                                             plot_dots=True, prefix_plot_png="_le_2")
     # plot_average_state_space_exploration(least_queues_base='./OutputData/clusters/least_queue_ether_no_clusters',
     #                                         random_base='./OutputData/clusters/random_ether_no_clusters',
     #                                         always_local_base='./OutputData/clusters/always_local_ether_no_clusters',
     #                                         ddqn_base='./OutputData/clusters/DDQN_result_ether_no_clusters',
-    #                                         a2c_base='./OutputData/clusters/A2C_ether_no_clusters',
+    #                                         a2c_base='./OutputData/clusters/A2C_result_ether_no_clusters',
     #                                         prefix_format='_%s_lambda_0.5_result_metrics',
     #                                         x_values=[1, 2, 3, 4],
     #                                         x_label="Number of Clusters",
