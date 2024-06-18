@@ -1,10 +1,13 @@
 # [PeersimGym: Agent Library](https://arxiv.org/abs/2403.17637v2)
+
+This repository is 
+
 # Introduction
 
 This repository acts as an extension to the Peersim simulator, providing a reinforcement learning environment for the simulator. The environment is designed to be used with the PettingZoo API, allowing for easy integration with existing reinforcement learning libraries.
 In here we provide a set of RL agents (`src/MARL`) and baseline algorithms (`src/ControlAlgorithms`) to be used as examples.
 
-The simulator can be found in the [simulator repository](https://anonymous.4open.science/anonymize/peersim-environment-CE2A) (anonymized for now) 
+The simulator can be found in the [simulator repository](https://github.com/FredericoMetelo/peersim-environment) 
 
 For a full showcase of how to use the environment and the agents provided see the `src/DebugEnv.py`
 
