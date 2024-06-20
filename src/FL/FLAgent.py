@@ -33,6 +33,7 @@ class FLAgent(ABC):
         if self.collect_data:
             print("Saving Data to CSV" + self.file_name + '.csv')
             self.data_collector.save_to_csv(self.file_name + '.csv')
+        self.models = {}
 
     @abstractmethod
     def get_action(self, observation, agent):
@@ -57,9 +58,9 @@ class FLAgent(ABC):
 
 
 
-    def fed_avg_align(self, updates_for_agent):
+    def fed_avg_align(self, updates_for_agent, base_model=None):
         print(f"{bcolors.WARNING}Integrating updates...{bcolors.ENDC}")
-        averaged_weights = OrderedDict()
+        averaged_weights = OrderedDict() if base_model is None else copy.deepcopy(base_model)
         no_ups = len(updates_for_agent)
         # Code from: https://github.com/Chelsiehi/FedAvg-Algorithm/blob/main/run.md
         for idx, u in enumerate(updates_for_agent):
@@ -69,6 +70,8 @@ class FLAgent(ABC):
                     averaged_weights[key] = 1 / no_ups * update[key]  # TODO: Use coefficients for each agent instead of this... This is just dumb...
                 else:
                     averaged_weights[key] += 1 / no_ups * update[key]  # TODO: Equally as dumb as the above line...
+        if no_ups == 0:
+            return OrderedDict()
         return averaged_weights
 
     def generate_pairings(self, cohort, controllers, type="all", neighbourhoodMatrix=None):
@@ -140,10 +143,10 @@ class FLAgent(ABC):
         return agents, srcs, dsts, updates
 
 
-    def align_weights(self, weights):
+    def align_weights(self, weights, base_model_state_dict=None):
         match self.align_algorithm:
             case "FedAvg":
-                return self.fed_avg_align(weights)
+                return self.fed_avg_align(weights, base_model_state_dict)
             case "FedProx":
                 raise NotImplementedError("FedProx not implemented yet")
                 # return fl.fed_prox_align(weights)
@@ -202,9 +205,9 @@ class FLAgent(ABC):
                 global_models = env.get_updates(agent)
                 if len(global_models) > 0:
                     for model in global_models:
+                        self.clear_agent_memory(agent)  # Clear stale entries when next iter. Could be using wrong action probs.
                         self.models[agent].load_state_dict(model['update'])
                         self.models[agent].optimizer = torch.optim.AdamW(self.models[agent].parameters(), self.models[agent].lr)
-                        self.models[agent].clear_memory()  # Clear stale entries when next iter. Could be using wrong action probs.
                         synched_global.append(agent)
                 if len(synched_global) == len(cohort):
                     break
@@ -214,3 +217,27 @@ class FLAgent(ABC):
                     return False, ticks_after_first_weight
             ticks_after_first_weight += 1
         return True, ticks_after_first_weight
+
+    @abstractmethod
+    def async_download_global_solution(self, env, agent, global_id):
+        # Used by agents to check if the global has sent any update.
+        pass
+
+    @abstractmethod
+    def async_upload_local_solution(self, env, agent):
+        pass
+
+    @abstractmethod
+    def async_add_new_solutions_to_global(self, env, global_id):
+        pass
+
+    @abstractmethod
+    def clear_agent_memory(self, agent):
+        pass
+
+    @abstractmethod
+    def clear_all_agent_memory(self):
+        pass
+
+    def dbg_get_grad(self, agent):
+        return {key: value for key, value in self.models[agent].named_parameters()}

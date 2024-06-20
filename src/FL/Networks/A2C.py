@@ -171,7 +171,11 @@ class ActorCritic(nn.Module):
 
         # Actor loss
         actor_probs = F.softmax(actor_logits, dim=1)
-        actor_loss = -T.mean(T.log(actor_probs.gather(1, actions)) * advantages.detach())
+        log_prob = T.log(actor_probs.gather(1, actions))
+
+        assert not T.isnan(log_prob).any() and not T.isinf(log_prob).any(), 'Log prob is nan or inf'
+
+        actor_loss = -T.mean(log_prob * advantages.detach())
 
         # Critic loss
         critic_loss = F.smooth_l1_loss(critic_values.squeeze(), returns.detach())  # Equivalent to Huber loss delta=1
@@ -186,8 +190,8 @@ class ActorCritic(nn.Module):
         # but because we inherit from nn.Module, we get the backpropagation for free.
         state = T.tensor(observation, dtype=T.float).to(self.device)
         pis, values = self.forward(state)
-        pis += 1e-10  # Guarantee it will never be 0
-        probs = T.softmax(pis, dim=0)
+        # pis += 1e-10  # Guarantee it will never be 0
+        probs = T.softmax(pis, dim=1)
         dist = Categorical(probs)
         action = dist.sample()
         return action.detach().cpu().numpy()

@@ -13,8 +13,10 @@ from src.ControlAlgorithms.AlwaysLocal import AlwaysLocal
 from src.ControlAlgorithms.LeastQueuesAgent import LeastQueueAlgorithm
 from src.ControlAlgorithms.ManualSelection import ManualSelection
 from src.ControlAlgorithms.RandomAgent import RandomControlAlgorithm
-from src.FL.FedAvgTrainer import FedAvgTrainer
-from src.FL.FedProxTrainer import FedProxTrainer
+from src.FL.FedAvgTrainerAsync import FedAvgTrainerAsync
+from src.FL.FedAvgTrainerSync import FedAvgTrainerSync
+from src.FL.FedProxTrainerAsync import FedProxTrainerAsync
+from src.FL.FedProxTrainerSync import FedProxTrainerSync
 from src.MARL.DDQNAgentMARL import DDQNAgentMARL
 from src.MARL.A2CAgentMARL import A2CAgentMARL
 from src.MARL.PPOAgentMARL import PPOAgentMARL
@@ -292,8 +294,10 @@ if __name__ == '__main__':
         }
 
         # Create an instance of A2CAgentFL with the args dictionary
-        # agent = FedAvgTrainer(args)
-        agent = FedProxTrainer(args)
+        # agent = FedAvgTrainerSync(args)
+        # agent = FedProxTrainerSync(args)
+        # agent = FedAvgTrainerAsync(args)
+        agent = FedProxTrainerAsync(args)
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None
