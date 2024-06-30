@@ -10,6 +10,7 @@ from src.Utils import utils
 import peersim_gym.envs.PeersimEnv as pe
 from src.Utils.MetricHelper import MetricHelper as mh
 import peersim_gym.envs.PeersimEnv as pg
+from tqdm import tqdm
 
 
 class A2CAgentMARL(Agent):
@@ -68,7 +69,7 @@ class A2CAgentMARL(Agent):
                 agent_w = load_weights + f"_{agent}.pth.tar"
                 self.A2Cs[agent].load_checkpoint(agent_w)
 
-        for i in range(num_episodes):
+        for i in tqdm(range(num_episodes)):
             # Prepare variables for the next run
             dones = [False for _ in controllers]
             agent_list = env.agents

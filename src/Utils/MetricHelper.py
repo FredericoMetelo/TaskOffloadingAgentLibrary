@@ -9,7 +9,7 @@ class MetricHelper:
 
         #
         self.reward_per_agent = {}
-        self.reward_per_agent_history = {agent: [] for agent in agents} # This is what is used to save the episode info, it's built using reward_per_agent. It saves data for the whole episode.
+        self.reward_per_agent_history = {agent: [] for agent in agents}  # This is what is used to save the episode info, it's built using reward_per_agent. It saves data for the whole episode.
 
         self.loss_per_agent = {}
         self.loss_per_agent_history = {agent: [] for agent in agents}
@@ -31,7 +31,6 @@ class MetricHelper:
         # This will store the average occupancy for each time-step in all episodes.
         self.occupancy_history = []
 
-
         # This will store the average response time for each client at each time-step in one episode.
         # Tbf, should not be initialized with the size of the number of nodes, but it is replaced later...
         self.average_response_time_per_episode = np.zeros(num_nodes)
@@ -42,7 +41,6 @@ class MetricHelper:
         self.consumed_energy_per_episode = np.zeros(num_nodes)
         self.consumed_energy_history = []
 
-
         self.tasks_dropped_per_episode = np.zeros(num_nodes)
         self.tasks_dropped_history = []
 
@@ -51,7 +49,6 @@ class MetricHelper:
 
         self.tasks_total_per_episode = np.zeros(num_nodes)
         self.tasks_total_history = []
-
 
         self.average_rewards = []
         self._aux_average_reward = 0
@@ -66,7 +63,7 @@ class MetricHelper:
         self.file_name = file_name
 
     def update_metrics_after_step(self, rewards, losses, overloaded_nodes, average_response_time, occupancy, dropped_tasks,
-                                  finished_tasks, total_tasks, consumed_energy):
+                                  finished_tasks, total_tasks, consumed_energy, agents=None):
         """
         This method is used to save the metrics after each step of the simulation.
         :param rewards:
@@ -77,12 +74,13 @@ class MetricHelper:
         :return:
         """
         step_reward = 0
-        for agent in self.agents:
+        agents = agents if agents is not None else self.agents
+        for agent in agents:
             self.reward_per_agent[agent] = self.reward_per_agent.get(agent, []) + [rewards[agent]]
             self.loss_per_agent[agent] = self.loss_per_agent.get(agent, []) + [losses[agent]]
             step_reward += rewards[agent]
 
-        self._aux_average_reward += step_reward / len(self.agents)
+        self._aux_average_reward += step_reward / len(agents)
 
         self.average_response_time_per_episode = average_response_time
         self.tasks_finished_per_episode = finished_tasks
@@ -220,7 +218,6 @@ class MetricHelper:
         r_rows = []
         rows = []
 
-
         for agent in self.agents:
             r_headers.extend([f"{agent}_loss", f"{agent}_reward"])
 
@@ -260,13 +257,14 @@ class MetricHelper:
         for worker, action in actions.items():
             self.register_action(action[pe.ACTION_NEIGHBOUR_IDX_FIELD], worker)
         return
+
     def reset_action_density(self):
         self.density_of_actions_history.append(self.density_of_actions)
         self.density_of_actions = {agent: {} for agent in self.agents}
         return
+
     def print_action_density_episode(self):
         for agent in self.agents:
             print(f"Agent {agent} action density: {self.density_of_actions[agent]}")
         self.reset_action_density()
         return
-
