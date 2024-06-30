@@ -186,7 +186,7 @@ class ActorCritic(nn.Module):
         # but because we inherit from nn.Module, we get the backpropagation for free.
         state = T.tensor(observation, dtype=T.float).to(self.device)
         pis, values = self.forward(state)
-        probs = T.softmax(pis, dim=0)
+        probs = T.softmax(pis, dim=1)
         dist = Categorical(probs)
         action = dist.sample()
         return action.detach().cpu().numpy()
