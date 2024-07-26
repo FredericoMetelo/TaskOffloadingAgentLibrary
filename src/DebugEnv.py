@@ -61,25 +61,33 @@ if __name__ == '__main__':
     POSITIONS = "18.55895350495783,17.02475796027715;47.56499372388999,57.28732691557995;5.366872150976409,43.28729893321355;17.488160666668694,29.422819514162434;81.56549175388358,53.14564532018814;85.15660881172089,74.47408014762478;18.438454887921974,44.310130148722195;72.04311826903107,62.06952644109185;25.60125368295145,15.54795598202745;17.543669122835837,70.7258178169151"
     TOPOLOGY = "0,1,2,3,6,8;1,0,2,3,4,5,6,7,8,9;2,0,1,3,6,8,9;3,0,1,2,6,8,9;4,1,5,7;5,1,4,7;6,0,1,2,3,8,9;7,1,4,5;8,0,1,2,3,6;9,1,2,3,6"
     controllers = ["0", "1"]  # , "5" only one for now...
-    config_dict = ch.generate_config_dict(lambda_task_arrival_rate=0.8,
+    config_dict = ch.generate_config_dict(
+                                          # Simulation Parameters
                                           scale=10,
                                           controllers=controllers,
-                                          # Simulation Parameters
                                           size=10,
                                           simulation_time=1000,
-                                          frequency_of_action=5,
-                                          has_cloud=0,
-                                          cloud_VM_processing_power=[1e8],
 
+                                          ## Cloud Setup
+                                          has_cloud=0,
+                                          cloud_VM_processing_power=1e8,
+                                          cloud_no_vms=3,
+                                          cloud_access=[0, 1, 1],
+                                          cloud_position=[300, 300],
+
+                                          ## Node Setup
                                           nodes_per_layer=[1, 1, 8],
-                                          cloud_access=[0, 0, 0],
                                           freqs_per_layer=[4e7, 2e7, 1e7],
                                           no_cores_per_layer=[1, 1, 1],
                                           q_max_per_layer=[8, 8, 8],
                                           variations_per_layer=[0, 0, 0],
                                           layersThatGetTasks=[1],
                                           clientLayers=[1],
+                                          clientIsSelf=0,
+                                          lambda_task_arrival_rate=0.8,
+                                          frequency_of_action=5,
 
+                                          ## Task Setup
                                           task_probs=[1],
                                           task_sizes=[50],
                                           task_instr=[32e7],
@@ -87,15 +95,13 @@ if __name__ == '__main__':
                                           task_deadlines=[100],
                                           target_time_for_occupancy=0.5,
 
+                                          ## Communication Setup
                                           comm_B=2,
                                           comm_Beta1=0.001,
                                           comm_Beta2=4,
                                           comm_Power=20,
 
-                                          weight_utility=10,
-
-                                          weight_delay={"exec": 2, "comm": 3, "queue": 1, "global": 1},
-                                          weight_overload=2,
+                                          # Manual Setup
                                           RANDOMIZETOPOLOGY=False,
                                           RANDOMIZEPOSITIONS=False,
                                           POSITIONS="15.55895350495783,17.02475796027715;47.56499372388999,57.28732691557995;5.366872150976409,43.28729893321355;17.488160666668694,29.422819514162434;81.56549175388358,53.14564532018814;85.15660881172089,74.47408014762478;18.438454887921974,44.310130148722195;72.04311826903107,62.06952644109185;25.60125368295145,15.54795598202745;17.543669122835837,70.7258178169151",
@@ -103,9 +109,13 @@ if __name__ == '__main__':
                                           workloadPath="/home/fm/IdeaProjects/peersim-environment/Datasets/alibaba_trace_cleaned.json",
                                           defaultCPUWorkload="2.4e+9",
                                           defaultMemoryWorkload="100",
-                                          clientIsSelf=0,
                                           channelTypes="PeersimSimulator.peersim.env.Transport.OpticalFiberSNR;PeersimSimulator.peersim.env.Transport.WirelessSNR",
                                           channelTypesBetweenLayers="0,0,1;0,0,1;1,1,1",
+
+                                          # Reward Configs
+                                          weight_utility=10,
+                                          weight_delay={"exec": 2, "comm": 3, "queue": 1, "global": 1},
+                                          weight_overload=2,
                                           )
 
     # TTE%%%%%%%%%%%%%%%%%%%% TEST TOPOLOGY END %%%%%%%%%%%%%%%%%%%%%%%%%%%%%#
@@ -141,9 +151,11 @@ if __name__ == '__main__':
     #                                       simulation_time=1000,
     #                                       frequency_of_action=1,
     #                                       has_cloud=0,
-    #                                       cloud_VM_processing_power=[1e8],
-    #
-    #                                       # nodes_per_layer=[10, 10, 10],
+    #                                       cloud_VM_processing_power=1e8,
+#                                           cloud_no_vms=3,
+#                                           cloud_position=[300, 300],
+
+    #                                       nodes_per_layer=[10, 10, 10],
     #                                       nodes_per_layer=manual_nodes_per_layer,
     #
     #                                       cloud_access=[0, 0, 0],
@@ -259,14 +271,14 @@ if __name__ == '__main__':
         #                       learning_rate=0.0001,
         #                       agents=env.possible_agents,
         #                       )
-        # agent = A2CAgentMARL(input_shape=shape_obs_flat,
-        #                      action_space=[env.action_space(agent) for agent in env.agents],
-        #                      output_shape=output_shape,
-        #                      agents=env.possible_agents,
-        #                      gamma=0.50,
-        #                      save_interval=10,
-        #                      steps_for_return=11,
-        #                      learning_rate=0.00001)
+        agent = A2CAgentMARL(input_shape=shape_obs_flat,
+                             action_space=[env.action_space(agent) for agent in env.agents],
+                             output_shape=output_shape,
+                             agents=env.possible_agents,
+                             gamma=0.50,
+                             save_interval=10,
+                             steps_for_return=11,
+                             learning_rate=0.00001)
         # agent = PPOAgentMARL(input_shape=shape_obs_flat,
         #                      action_space=[env.action_space(agent) for agent in env.agents],
         #                      output_shape=output_shape,
@@ -292,12 +304,13 @@ if __name__ == '__main__':
             'align_algorithm': 'FedAvg',  # default value
             'no_rounds': 10  # default value
         }
-
-        # Create an instance of A2CAgentFL with the args dictionary
+        # FL Agents:
         # agent = FedAvgTrainerSync(args)
         # agent = FedProxTrainerSync(args)
         # agent = FedAvgTrainerAsync(args)
-        agent = FedProxTrainerAsync(args)
+        # agent = FedProxTrainerAsync(args)
+
+
         warm_up_file = None
         # # warm_up_file = "Datasets/LeastQueueAgent/LeastQueueAgent_0.6.csv"
         load_weights = None
