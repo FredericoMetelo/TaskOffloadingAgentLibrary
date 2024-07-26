@@ -101,7 +101,9 @@ def generate_config_dict(controllers="[0]",
                          frequency_of_action=2,
 
                          has_cloud=1,
-                         cloud_VM_processing_power=[1e8],
+                         cloud_VM_processing_power=1e8,
+                         cloud_position=[300,300],
+                         cloud_no_vms=3,
 
                          nodes_per_layer=[10],
                          cloud_access=[0],
@@ -164,6 +166,7 @@ def generate_config_dict(controllers="[0]",
         "SCALE": str(scale),
 
         "CLOUD_EXISTS": str(has_cloud),
+        "CLOUD_POS": to_string_array(cloud_position),
         "NO_LAYERS": str(len(nodes_per_layer)),
         "NO_NODES_PER_LAYERS": to_string_array(nodes_per_layer),
         "CLOUD_ACCESS": to_string_array(cloud_access),
@@ -173,8 +176,9 @@ def generate_config_dict(controllers="[0]",
         "Q_MAX": to_string_array(q_max_per_layer),
         "VARIATIONS": to_string_array(variations_per_layer),
 
-        "protocol.cld.no_vms": str(len(cloud_VM_processing_power)),
-        "protocol.cld.VMProcessingPower": to_string_array(cloud_VM_processing_power),
+        "protocol.cld.no_vms": str(cloud_no_vms),
+        "protocol.cld.VMProcessingPower": str(cloud_VM_processing_power),
+
 
         "init.Net1.r": str(radius),
 
